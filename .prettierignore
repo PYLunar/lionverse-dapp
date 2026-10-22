@@ -1,0 +1,12 @@
+node_modules
+.venv
+dist
+artifacts
+cache
+test-results
+playwright-report
+package-lock.json
+contracts/generated
+src/generated
+public/fonts
+deployments

@@ -1,0 +1,12 @@
+node_modules/
+.venv/
+dist/
+artifacts/
+cache/
+coverage/
+test-results/
+playwright-report/
+.env
+.env.local
+deployments/*.json
+!deployments/.gitkeep

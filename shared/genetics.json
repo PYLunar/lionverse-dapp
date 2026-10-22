@@ -1,0 +1,89 @@
+{
+  "version": 2,
+  "mutationDenominator": 8,
+  "loci": [
+    {
+      "key": "species",
+      "label": "基础品种",
+      "names": ["原野狮", "雪域狮", "黄金狮", "钻石狮"],
+      "weights": [6200, 2400, 900, 350]
+    },
+    {
+      "key": "fur",
+      "label": "毛色",
+      "names": ["日光金", "奶油白", "雾霭蓝", "赤陶棕", "暮光紫", "曜石灰"],
+      "weights": [1, 1, 1, 1, 1, 1]
+    },
+    {
+      "key": "mane",
+      "label": "鬃毛",
+      "names": [
+        "蓬松栗鬃",
+        "太阳花鬃",
+        "流云银鬃",
+        "野火红鬃",
+        "星夜紫鬃",
+        "暗夜王鬃",
+        "焰冠鬃",
+        "晶簇鬃",
+        "星环鬃"
+      ],
+      "weights": [23, 20, 17, 14, 11, 8, 4, 2, 1]
+    },
+    {
+      "key": "eyes",
+      "label": "瞳色",
+      "names": ["橄榄绿", "冰川蓝", "琥珀金", "紫水晶", "薄荷青", "日月异色瞳", "星芒瞳"],
+      "weights": [24, 22, 20, 17, 13, 3, 1]
+    },
+    {
+      "key": "pattern",
+      "label": "花纹",
+      "names": ["纯色", "额心星纹", "野性条纹", "星尘斑点", "星座连纹", "远古符文"],
+      "weights": [42, 26, 20, 8, 3, 1]
+    },
+    {
+      "key": "temperament",
+      "label": "性格",
+      "names": ["勇敢", "慵懒", "好奇", "温柔", "淘气", "空灵"],
+      "weights": [25, 24, 22, 16, 11, 2]
+    },
+    {
+      "key": "aura",
+      "label": "光效",
+      "names": ["无光效", "萤火微光", "星尘环绕", "轨道星环"],
+      "weights": [80, 10, 7, 3]
+    },
+    {
+      "key": "crown",
+      "label": "冠饰",
+      "names": ["无冠饰", "月桂叶冠", "水晶角冠", "悬浮光环"],
+      "weights": [85, 10, 4, 1]
+    },
+    {
+      "key": "spectrum",
+      "label": "光谱倾向",
+      "names": ["自然", "炫彩", "黑白炫彩"],
+      "weights": [9700, 299, 1]
+    }
+  ],
+  "spectrum": {
+    "denominator": 10000,
+    "founderPrismatic": 150,
+    "founderMonochrome": 1,
+    "breeding": {
+      "noCarrier": 10,
+      "oneCarrier": 50,
+      "twoCarriers": 100,
+      "oneExpressed": 300,
+      "twoExpressed": 600
+    },
+    "monochrome": {
+      "denominator": 1000,
+      "normal": 1,
+      "carrier": 2,
+      "oneExpressed": 5,
+      "twoExpressed": 10
+    }
+  }
+}

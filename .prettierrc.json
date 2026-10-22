@@ -1,0 +1,5 @@
+{
+  "printWidth": 90,
+  "plugins": ["prettier-plugin-solidity"],
+  "overrides": [{ "files": "*.sol", "options": { "tabWidth": 4, "singleQuote": true } }]
+}

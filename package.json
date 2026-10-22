@@ -1,0 +1,47 @@
+{
+  "name": "lionverse-dapp",
+  "version": "2.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 0.0.0.0",
+    "build": "vite build",
+    "preview": "vite preview --host 0.0.0.0",
+    "compile": "npm run check:traits && hardhat compile && node scripts/sync-abi.mjs",
+    "test": "npm run compile && hardhat test --no-compile",
+    "test:ui": "playwright test",
+    "chain": "hardhat node",
+    "deploy:local": "npm run compile && hardhat run scripts/deploy.cjs --no-compile --network localhost",
+    "deploy:sepolia": "npm run compile && hardhat run scripts/deploy.cjs --no-compile --network sepolia",
+    "generate:traits": "node scripts/generate-traits.mjs",
+    "check:traits": "node scripts/generate-traits.mjs --check",
+    "test:unit": "node --test tests/unit/*.test.js",
+    "lint": "eslint . --max-warnings=0",
+    "format": "prettier --write .",
+    "format:check": "prettier --check .",
+    "check": "npm run check:traits && npm run lint && npm run format:check && npm run test:unit && npm test && npm run build"
+  },
+  "dependencies": {
+    "@openzeppelin/contracts": "5.4.0",
+    "ethers": "6.15.0",
+    "lucide-react": "0.468.0",
+    "react": "19.1.1",
+    "react-dom": "19.1.1"
+  },
+  "devDependencies": {
+    "@nomicfoundation/hardhat-ethers": "3.1.0",
+    "@playwright/test": "1.55.0",
+    "@vitejs/plugin-react": "5.0.2",
+    "dotenv": "17.2.2",
+    "hardhat": "2.28.0",
+    "solc": "0.8.28",
+    "vite": "7.1.5",
+    "eslint": "9.35.0",
+    "@eslint/js": "9.35.0",
+    "eslint-plugin-react-hooks": "5.2.0",
+    "eslint-plugin-react": "7.37.5",
+    "globals": "16.3.0",
+    "prettier": "3.6.2",
+    "prettier-plugin-solidity": "1.4.3"
+  }
+}
