@@ -49,8 +49,8 @@ describe("Versioned genetics parity and rarity limits", function () {
   it("produces rare births and records spontaneous spectrum awakenings as inheritable genes", async function () {
     // Fixed protocol vectors exercise rare branches without flaky random sampling.
     for (const [seed, spectrum] of [
-      [27, 1],
-      [624, 2],
+      [1, 1],
+      [4, 2],
     ]) {
       const founder = await harness.founder(seed);
       assert.equal(founder.spectrum, BigInt(spectrum));

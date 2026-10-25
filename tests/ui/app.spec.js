@@ -49,8 +49,8 @@ test("documents actual rare varieties and handles an unavailable wallet honestly
   await page.goto("/");
   await page.getByRole("button", { name: "图鉴与规则", exact: true }).click();
   await expect(page.locator(".species-guide")).toContainText("黄金狮");
-  await expect(page.locator(".species-guide")).toContainText("3.5%");
-  await expect(page.locator(".species-guide")).toContainText("1.49%");
+  await expect(page.locator(".species-guide")).toContainText("4.5685%");
+  await expect(page.locator(".species-guide")).toContainText("25%");
   await expect(page.locator(".trait-guide")).toContainText("星芒瞳 · 1%");
   await page.getByRole("button", { name: "连接钱包", exact: true }).click();
   await expect(page.getByRole("alert")).toBeVisible();

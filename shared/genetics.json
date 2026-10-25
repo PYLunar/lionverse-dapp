@@ -69,8 +69,8 @@
   ],
   "spectrum": {
     "denominator": 10000,
-    "founderPrismatic": 150,
-    "founderMonochrome": 1,
+    "founderPrismatic": 5000,
+    "founderMonochrome": 2500,
     "breeding": {
       "noCarrier": 10,
       "oneCarrier": 50,

@@ -7,8 +7,8 @@ library TraitCatalog {
     uint256 internal constant LOCUS_COUNT = 9;
     uint256 internal constant MUTATION_DENOMINATOR = 8;
     uint256 internal constant SPECTRUM_DENOMINATOR = 10000;
-    uint256 internal constant FOUNDER_PRISMATIC = 150;
-    uint256 internal constant FOUNDER_MONOCHROME = 1;
+    uint256 internal constant FOUNDER_PRISMATIC = 5000;
+    uint256 internal constant FOUNDER_MONOCHROME = 2500;
     uint256 internal constant BREED_NO_CARRIER = 10;
     uint256 internal constant BREED_ONE_CARRIER = 50;
     uint256 internal constant BREED_TWO_CARRIERS = 100;

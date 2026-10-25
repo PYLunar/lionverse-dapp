@@ -60,7 +60,7 @@ test("prismatic pairs forecast 94% natural offspring and a tiny monochrome branc
   await expect(page.locator(".spectrum-forecast")).toContainText("0.006%");
   await page.getByRole("button", { name: "图鉴与规则", exact: true }).click();
   await expect(page.locator(".species-guide")).toContainText("黑白炫彩狮");
-  await expect(page.locator(".species-guide")).toContainText("0.01%");
+  await expect(page.locator(".species-guide")).toContainText("25%");
 });
 
 test("migrates old demo assets without deleting the old key", async ({ page }) => {
