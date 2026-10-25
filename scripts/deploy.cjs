@@ -33,7 +33,7 @@ async function main() {
     JSON.stringify(
       {
         address,
-        geneticsVersion: Number(await contract.GENETICS_VERSION()),
+        model: "four-visible-traits",
         chainId: Number(chainId),
         deployer: deployer.address,
         transactionHash: contract.deploymentTransaction().hash,

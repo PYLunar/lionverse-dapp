@@ -1,543 +1,532 @@
-import LionDetail from "./components/LionDetail.jsx";
-import GalleryPage from "./pages/GalleryPage.jsx";
-import useGameController from "./hooks/useGameController.js";
-import FamilyPage from "./pages/FamilyPage.jsx";
-
-import Badge from "./components/Badge.jsx";
-import Spinner from "./components/Spinner.jsx";
+import { useEffect, useRef, useState } from "react";
+import { PawPrint, Wallet, ArrowUpRight } from "lucide-react";
 import Modal from "./components/Modal.jsx";
-
-import Habitat from "./components/Habitat.jsx";
-import GuidePage from "./pages/GuidePage.jsx";
-import BreedingPage from "./pages/BreedingPage.jsx";
-
+import { shortAddress, rarityOf, traitLabels } from "./domain/catalog.js";
 import {
-  ArrowRight,
-  BookOpen,
-  Check,
-  Compass,
-  Dna,
-  ExternalLink,
-  Heart,
-  Leaf,
-  Menu,
-  GitFork,
-  PawPrint,
-  ShieldCheck,
-  Sparkles,
-  Sprout,
-  Wallet,
-  X,
-} from "lucide-react";
-import LionPortrait from "./LionPortrait";
-import { shortAddress } from "./domain/catalog.js";
+  ADDRESS,
+  CHAIN_ID,
+  NETWORK,
+  EXPLORER,
+  CONFIGURED,
+  connect,
+  loadCollection,
+  loadLion,
+  transact,
+  friendlyError,
+} from "./services/blockchain.js";
 
-import { initialDemo } from "./domain/demo.js";
-
-import { CONFIGURED, EXPLORER, NETWORK } from "./services/blockchain.js";
-
-const NAV = [
-  ["explore", Compass, "探索狮屿"],
-  ["collection", PawPrint, "我的狮群"],
-  ["breed", Dna, "繁育小屋"],
-  ["family", GitFork, "家谱图鉴"],
-  ["guide", BookOpen, "图鉴与规则"],
+const PAGES = [
+  ["mint", "铸造"],
+  ["collection", "我的狮群"],
+  ["breed", "繁育"],
 ];
-const PAGE_NAMES = Object.fromEntries(NAV.map(([id, , label]) => [id, label]));
+
 export default function App() {
-  const game = useGameController();
-  const {
-    mode,
-    page,
-    mobileNav,
-    setMobileNav,
-    demo,
-    wallet,
-    chainLions,
-    chainTotal,
-    totalOwned,
-    totalSupply,
-    loading,
-    loadError,
-    setRefresh,
-    setOffset,
-    ownedPage,
-    visibleLions,
-    filtered,
-    query,
-    setQuery,
-    rarity,
-    setRarity,
-    sort,
-    setSort,
-    detail,
-    newborn,
-    mintOpen,
-    setMintOpen,
-    recipient,
-    setRecipient,
-    parentA,
-    setParentA,
-    parentB,
-    setParentB,
-    busy,
-    notice,
-    setNotice,
-    txHash,
-    now,
-    a,
-    b,
-    owned,
-    resting,
-    navigate,
-    changeMode,
-    connectWallet,
-    perform,
-    openDetail,
-    tell,
-    setDetail,
-    featured,
-    familyRoot,
-    setFamilyRoot,
-    isOwned,
-    startBreeding,
-  } = game;
+  const [page, setPage] = useState("mint");
+  const [account, setAccount] = useState("");
+  const [collection, setCollection] = useState({ lions: [], total: 0, supply: 0 });
+  const [limit, setLimit] = useState(12);
+  const [refresh, setRefresh] = useState(0);
+  const [loading, setLoading] = useState(false);
+  const [busy, setBusy] = useState(false);
+  const [notice, setNotice] = useState(null);
+  const [loadError, setLoadError] = useState("");
+  const [hash, setHash] = useState("");
+  const [detail, setDetail] = useState(null);
+  const [recipient, setRecipient] = useState("");
+  const [parentA, setParentA] = useState("");
+  const [parentB, setParentB] = useState("");
+  const [now, setNow] = useState(Date.now());
+  const busyRef = useRef(false);
+  const identity = useRef(0);
+
+  useEffect(() => {
+    const timer = setInterval(() => setNow(Date.now()), 1000);
+    return () => clearInterval(timer);
+  }, []);
+  useEffect(() => {
+    const ethereum = window.ethereum;
+    if (!ethereum?.on) return;
+    function reset() {
+      identity.current++;
+      setAccount("");
+      setCollection({ lions: [], total: 0, supply: 0 });
+      setDetail(null);
+      setRecipient("");
+      setParentA("");
+      setParentB("");
+      setLimit(12);
+      setRefresh((n) => n + 1);
+    }
+    function networkChanged(chain) {
+      reset();
+      if (Number(chain) !== CHAIN_ID)
+        setNotice({ error: true, text: `请连接 ${NETWORK}。` });
+    }
+    ethereum.on("accountsChanged", reset);
+    ethereum.on("chainChanged", networkChanged);
+    return () => {
+      ethereum.removeListener("accountsChanged", reset);
+      ethereum.removeListener("chainChanged", networkChanged);
+    };
+  }, []);
+  useEffect(() => {
+    let cancelled = false;
+    if (!CONFIGURED) return;
+    setLoading(true);
+    setLoadError("");
+    loadCollection(account, limit)
+      .then((result) => {
+        if (!cancelled) setCollection(result);
+      })
+      .catch((error) => {
+        if (!cancelled) setLoadError(friendlyError(error));
+      })
+      .finally(() => {
+        if (!cancelled) setLoading(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [account, limit, refresh]);
+
+  async function connectWallet() {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    try {
+      setAccount(await connect());
+      setNotice(null);
+    } catch (error) {
+      setNotice({ error: true, text: friendlyError(error) });
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  }
+  async function perform(action, args = []) {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    setHash("");
+    try {
+      const result = await transact(action, args, (text, txHash) => {
+        setNotice({ text });
+        setHash(txHash);
+      });
+      setHash(result.hash);
+      setNotice({
+        text:
+          action === "transfer"
+            ? "转赠已在链上确认。"
+            : result.lion
+              ? "新狮子已在链上诞生！"
+              : "铸造已确认，详情暂不可用，请刷新收藏。",
+      });
+      const scope = identity.current;
+      const [accounts, chain] = await Promise.allSettled([
+        window.ethereum.request({ method: "eth_accounts" }),
+        window.ethereum.request({ method: "eth_chainId" }),
+      ]);
+      if (
+        scope === identity.current &&
+        accounts.status === "fulfilled" &&
+        chain.status === "fulfilled" &&
+        Number(chain.value) === CHAIN_ID &&
+        accounts.value[0]?.toLowerCase() === result.account.toLowerCase()
+      ) {
+        setAccount(result.account);
+        setDetail(result.lion);
+        setRecipient("");
+        setParentA("");
+        setParentB("");
+      }
+      setRefresh((n) => n + 1);
+    } catch (error) {
+      setNotice({ error: true, text: friendlyError(error) });
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  }
+  async function showParent(id) {
+    if (busyRef.current) return;
+    busyRef.current = true;
+    setBusy(true);
+    const scope = identity.current;
+    try {
+      const lion = await loadLion(id);
+      if (scope === identity.current) {
+        setDetail(lion);
+        setRecipient("");
+      }
+    } catch (error) {
+      setNotice({ error: true, text: friendlyError(error) });
+    } finally {
+      busyRef.current = false;
+      setBusy(false);
+    }
+  }
+  const a = collection.lions.find((lion) => String(lion.id) === parentA);
+  const b = collection.lions.find((lion) => String(lion.id) === parentB);
+  const wait = Math.max(
+    0,
+    Math.ceil((Math.max(a?.nextBreedAt || 0, b?.nextBreedAt || 0) * 1000 - now) / 1000),
+  );
+  const ownDetail =
+    detail && account && detail.owner.toLowerCase() === account.toLowerCase();
 
   return (
     <div className="app-shell">
-      {mobileNav && (
-        <button
-          className="nav-scrim"
-          aria-label="关闭导航"
-          onClick={() => setMobileNav(false)}
-        />
-      )}
-      <aside className={`sidebar ${mobileNav ? "open" : ""}`}>
-        <a
-          href="#"
-          className="brand"
-          onClick={(e) => {
-            e.preventDefault();
-            navigate("explore");
-          }}
-        >
-          <span className="brand-icon">
-            <PawPrint size={25} fill="currentColor" />
-          </span>
-          <span>
-            狮屿<span className="brand-en">LIONVERSE</span>
-          </span>
+      <header>
+        <a className="brand" href="#mint" onClick={() => setPage("mint")}>
+          <PawPrint size={25} /> 狮屿 <small>LIONVERSE</small>
         </a>
-        <div className="nav-label">你的小小数字世界</div>
         <nav aria-label="主导航">
-          {NAV.map(([id, Icon, label]) => (
+          {PAGES.map(([id, label]) => (
             <button
               key={id}
-              className={`nav-item ${page === id ? "active" : ""}`}
-              onClick={() => navigate(id)}
               aria-current={page === id ? "page" : undefined}
+              onClick={() => {
+                setPage(id);
+                setNotice(null);
+              }}
             >
-              <Icon size={20} />
-              <span>{label}</span>
-              {id === "collection" && <span className="nav-count">{totalOwned}</span>}
-              {page === id && <span className="active-dot" />}
+              {label}
             </button>
           ))}
         </nav>
-        <div className="sidebar-note">
-          <div className="note-art">
-            <Sprout size={30} />
-            <span>✧</span>
-          </div>
-          <h3>每一只，都有自己的故事。</h3>
-          <p>
-            从一次小小的相遇，
-            <br />
-            开始你的狮屿冒险。
-          </p>
-          <button onClick={() => navigate("guide")}>
-            了解狮屿 <ArrowRight size={14} />
-          </button>
-        </div>
-        <div className="sidebar-bottom">
+        <button className="wallet-button" onClick={connectWallet} disabled={busy}>
+          <Wallet size={16} />
+          {account ? shortAddress(account) : "连接钱包"}
+        </button>
+      </header>
+      <main>
+        <div className="network-line">
           <span className="network-dot" />
-          {mode === "demo" ? "演示世界 · 本地保存" : `${NETWORK} 测试网络`}
-          <span className="version">v2.0</span>
+          {NETWORK}
+          <span>{CONFIGURED ? `合约 ${shortAddress(ADDRESS)}` : "尚未部署合约"}</span>
         </div>
-      </aside>
-
-      <div className="workspace">
-        <header className="topbar">
-          <div className="breadcrumb">
-            <button
-              className="icon-button mobile-menu"
-              aria-label="打开导航"
-              onClick={() => setMobileNav(true)}
-            >
-              <Menu size={22} />
-            </button>
-            <span>狮屿</span>
-            <span className="slash">/</span>
-            <strong>{PAGE_NAMES[page]}</strong>
-          </div>
-          <div className="topbar-actions">
-            <div className="mode-switch" aria-label="运行模式">
-              <button
-                className={mode === "demo" ? "selected" : ""}
-                onClick={() => changeMode("demo")}
-                disabled={busy}
-              >
-                演示模式
-              </button>
-              <button
-                className={mode === "chain" ? "selected" : ""}
-                onClick={() => changeMode("chain")}
-                disabled={busy}
-              >
-                链上模式
-              </button>
-            </div>
-            <button className="wallet-button" onClick={connectWallet} disabled={busy}>
-              <Wallet size={16} />
-              <span>{wallet ? shortAddress(wallet) : "连接钱包"}</span>
-            </button>
-          </div>
-        </header>
-
-        <main>
-          <div className="page-heading">
-            <div>
-              <div className="eyebrow">
-                <span /> A LITTLE WILD. UNIQUELY YOURS.
-              </div>
-              <h1>
-                {page === "explore" ? "欢迎来到，你的狮屿" : PAGE_NAMES[page]}
-                <span className="heading-dot">.</span>
-              </h1>
-              <p>
-                {page === "explore"
-                  ? "遇见一只独特的狮子，收藏一段只属于你的故事。"
-                  : page === "collection"
-                    ? "每一位小伙伴，都是不可替代的存在。"
-                    : page === "family"
-                      ? "追溯每一次相遇，发现藏在基因里的可能。"
-                      : page === "breed"
-                        ? "让两份独特相遇，迎接一个全新的小生命。"
-                        : "认识这里的每一种独特，也了解它们如何诞生。"}
-              </p>
-            </div>
-            <div className="world-label">
-              <Leaf size={14} />
-              {mode === "demo" ? "正在探索演示世界" : NETWORK}
-            </div>
-          </div>
-          {mode === "demo" && (
-            <div className="demo-banner">
-              <span>
-                <Sparkles size={15} />
-                当前为演示模式，收藏保存在本浏览器，不是真实 NFT。
-              </span>
-              <button onClick={() => changeMode("chain")}>
-                进入链上世界 <ArrowRight size={14} />
-              </button>
-            </div>
-          )}
-          {mode === "chain" && !CONFIGURED && (
-            <div className="setup-banner">
-              <ShieldCheck size={22} />
-              <div>
-                <strong>你的链上世界，等待开启</strong>
-                <p>
-                  先按项目 README 部署 LionNFT
-                  合约并配置地址，然后重新启动页面。现在可以切回演示模式体验全部玩法。
-                </p>
-              </div>
-            </div>
-          )}
-
-          {page === "explore" && (
-            <>
-              <section className="hero">
-                <div className="hero-copy">
-                  <div className="hero-kicker">
-                    <span /> MEET YOUR FIRST LION
-                  </div>
-                  <h2>
-                    有一点野，
-                    <br />
-                    有亿点<span>独一无二。</span>
-                  </h2>
-                  <p>
-                    随机基因，天生不同。
-                    <br />
-                    领养、收藏、繁育，建立你的专属狮群。
-                  </p>
-                  <button
-                    className="primary-button"
-                    onClick={() => setMintOpen(true)}
-                    disabled={busy || (mode === "chain" && !CONFIGURED)}
-                  >
-                    <PawPrint size={18} />
-                    领养随机狮子
-                    <ArrowRight size={17} />
-                  </button>
-                  <div className="hero-footnote">
-                    <ShieldCheck size={13} />
-                    {mode === "demo"
-                      ? "免费体验 · 无需钱包 · 即刻相遇"
-                      : "免费铸造 · 仅需测试网 Gas"}
-                  </div>
-                </div>
-                <div className="hero-scene">
-                  <Habitat />
-                  <div className="orbit-note">
-                    <Sparkles size={14} />
-                    天生独特的链上伙伴
-                  </div>
-                  <LionPortrait lion={featured} decorative />
-                  <div className="hero-lion-label">
-                    <span className="label-paw">
-                      <PawPrint size={19} />
-                    </span>
-                    <div>
-                      <strong>
-                        日冕 <span>Sol</span>
-                      </strong>
-                      <small>GEN 0 · 黄金狮</small>
-                    </div>
-                    <Badge rarity={featured.rarity} />
-                  </div>
-                  <div className="hero-art-caption">外观示例 · 由基因绘制</div>
-                </div>
-              </section>
-              <section className="stats" aria-label="狮屿概况">
-                <div>
-                  <span className="stat-icon">
-                    <PawPrint size={21} />
-                  </span>
-                  <div>
-                    <span>{mode === "demo" ? "演示世界的狮子" : "已诞生的狮子"}</span>
-                    <strong>
-                      {totalSupply.toLocaleString()}
-                      <small>/ 10,000</small>
-                    </strong>
-                  </div>
-                </div>
-                <div>
-                  <span className="stat-icon lilac">
-                    <Dna size={21} />
-                  </span>
-                  <div>
-                    <span>理论特征组合</span>
-                    <strong>
-                      130.6 万<small>种特征组合</small>
-                    </strong>
-                  </div>
-                </div>
-                <div>
-                  <span className="stat-icon gold">
-                    <Heart size={21} />
-                  </span>
-                  <div>
-                    <span>我的小伙伴</span>
-                    <strong>
-                      {totalOwned}
-                      <small>只专属狮子</small>
-                    </strong>
-                  </div>
-                  <button
-                    className="stat-link"
-                    aria-label="查看我的狮群"
-                    onClick={() => navigate("collection")}
-                  >
-                    <ArrowRight size={19} />
-                  </button>
-                </div>
-              </section>
-            </>
-          )}
-
-          {(page === "explore" || page === "collection") && (
-            <GalleryPage
-              {...{
-                page,
-                mode,
-                visibleLions,
-                chainTotal,
-                busy,
-                setMintOpen,
-                rarity,
-                setRarity,
-                query,
-                setQuery,
-                sort,
-                setSort,
-                chainLions,
-                loadError,
-                setRefresh,
-                loading,
-                filtered,
-                isOwned,
-                openDetail,
-                ownedPage,
-                wallet,
-                connectWallet,
-                setOffset,
-              }}
-            />
-          )}
-
-          {page === "breed" && (
-            <BreedingPage
-              {...{
-                loadError,
-                setRefresh,
-                a,
-                b,
-                parentA,
-                setParentA,
-                parentB,
-                setParentB,
-                owned,
-                now,
-                busy,
-                mode,
-                chainLions,
-                chainTotal,
-                loading,
-                setOffset,
-                resting,
-                perform,
-              }}
-            />
-          )}
-
-          {page === "family" && (
-            <FamilyPage
-              key={`${mode}:${wallet}`}
-              mode={mode}
-              wallet={wallet}
-              demo={demo}
-              rootId={familyRoot}
-              onRoot={setFamilyRoot}
-              onDetail={openDetail}
-              connectWallet={connectWallet}
-              busy={busy}
-            />
-          )}
-          {page === "guide" && <GuidePage />}
-
-          <footer>
-            <span className="footer-brand">
-              <PawPrint size={15} /> LIONVERSE <span>用一点好奇心，收藏一份独特。</span>
-            </span>
-            <span>
-              生于链上，陪伴日常 <span className="footer-sparkle">✦</span>
-            </span>
-          </footer>
-        </main>
-      </div>
-
-      {notice && (
-        <div
-          className={`toast ${notice.kind}`}
-          role={notice.kind === "error" ? "alert" : "status"}
-        >
-          <span>
-            {busy ? (
-              <Spinner />
-            ) : notice.kind === "success" ? (
-              <Check size={19} />
-            ) : (
-              <Sparkles size={19} />
-            )}
-          </span>
-          <div>
-            {notice.message}
-            {txHash &&
+        {notice && !detail && (
+          <div
+            role={notice.error ? "alert" : "status"}
+            className={notice.error ? "notice error" : "notice"}
+          >
+            {notice.text}
+            {hash &&
               (EXPLORER ? (
-                <a href={`${EXPLORER}/tx/${txHash}`} target="_blank" rel="noreferrer">
-                  查看交易 <ExternalLink size={12} />
+                <a href={`${EXPLORER}/tx/${hash}`} target="_blank" rel="noreferrer">
+                  查看交易 ↗
                 </a>
               ) : (
-                <small>交易：{shortAddress(txHash)}</small>
+                <small>交易：{hash}</small>
               ))}
           </div>
-          <button
-            className="icon-button"
-            aria-label="关闭通知"
-            onClick={() => setNotice(null)}
-          >
-            <X size={16} />
-          </button>
-        </div>
-      )}
-
-      {mintOpen && (
-        <Modal title="领养随机狮子" close={() => setMintOpen(false)} busy={busy}>
-          <div className="mint-modal">
-            <span className="round-icon">
-              <PawPrint size={31} />
-            </span>
-            <div className="eyebrow">A NEW FRIEND AWAITS</div>
-            <h2>你的下一位伙伴，会是什么模样？</h2>
-            <p>
-              品种、外形与天赋特征随机生成。
-              <br />
-              它的编号独一无二，故事由你继续。
-            </p>
-            <div className="mint-preview">
-              {[initialDemo()[0], initialDemo()[2], initialDemo()[4]].map((l) => (
-                <LionPortrait key={l.id} lion={l} />
-              ))}
-            </div>
-            <div className="mint-summary">
-              <span>{mode === "demo" ? "演示领养" : "NFT 铸造"}</span>
-              <strong>
-                免费{" "}
-                <small>{mode === "demo" ? "· 仅保存在本浏览器" : "+ 网络 Gas"}</small>
-              </strong>
-            </div>
-            <button
-              className="primary-button wide"
-              disabled={busy}
-              onClick={() => perform("mint")}
-            >
-              {busy ? <Spinner /> : <Sparkles size={18} />}{" "}
-              {busy
-                ? "正在等待确认…"
-                : mode === "demo"
-                  ? "揭晓我的小狮子"
-                  : "连接钱包并铸造"}
+        )}
+        {loadError && (
+          <div role="alert" className="notice error">
+            {loadError}
+            <button onClick={() => setRefresh((n) => n + 1)} disabled={loading}>
+              重试
             </button>
-            <small>
-              {mode === "demo"
-                ? "演示收藏不是真实 NFT，不会发送链上交易。"
-                : `在 ${NETWORK} 创建 ERC-721，需在钱包中确认。`}
-            </small>
+          </div>
+        )}
+        {!CONFIGURED && (
+          <p className="notice">请按 README 部署简化版合约，然后启动前端。</p>
+        )}
+        {page === "mint" && (
+          <>
+            <section className="hero">
+              <div>
+                <p className="eyebrow">FOUR TRAITS. ONE LION.</p>
+                <h1>
+                  遇见你的
+                  <br />
+                  链上狮子。
+                </h1>
+                <p>
+                  四项外观，一份属于钱包的收藏。铸造、繁育或转赠，每一步都记录在链上。
+                </p>
+                <button
+                  className="primary"
+                  disabled={busy || !CONFIGURED}
+                  onClick={() => perform("mint")}
+                >
+                  {busy ? "处理中…" : account ? "铸造一只狮子" : "连接钱包并铸造"}
+                </button>
+                <small>铸造免费 · 仅需网络 Gas · 初代与子代冷却 5 分钟</small>
+              </div>
+              <div className="hero-art" aria-hidden="true">
+                <svg viewBox="0 0 360 340">
+                  <circle cx="180" cy="170" r="145" fill="#e4ddc5" />
+                  <ellipse cx="180" cy="270" rx="58" ry="47" fill="#dfb86b" />
+                  <circle cx="180" cy="148" r="112" fill="#a7723f" />
+                  <circle cx="108" cy="97" r="24" fill="#e9c888" />
+                  <circle cx="252" cy="97" r="24" fill="#e9c888" />
+                  <ellipse cx="180" cy="155" rx="77" ry="82" fill="#efd49b" />
+                  <ellipse cx="149" cy="148" rx="9" ry="13" fill="#384d3b" />
+                  <ellipse cx="211" cy="148" rx="9" ry="13" fill="#384d3b" />
+                  <ellipse cx="180" cy="191" rx="37" ry="25" fill="#fff0cf" />
+                  <path
+                    d="m167 180 13 14 13-14zM180 194v11m0 0q-11 9-20 0m20 0q11 9 20 0"
+                    fill="#514033"
+                    stroke="#514033"
+                    strokeWidth="2"
+                  />
+                </svg>
+                <p>外观示例 · 实际外观由四项属性决定</p>
+              </div>
+            </section>
+            <section className="probabilities" aria-label="初代铸造概率">
+              {[
+                ["60%", "普通品种", "原野 / 雪域 / 黄金 / 钻石"],
+                ["30%", "黑白炫彩", "黑白渐变鬃毛"],
+                ["10%", "普通炫彩", "彩虹渐变鬃毛"],
+              ].map(([rate, name, text]) => (
+                <article key={name}>
+                  <strong>{rate}</strong>
+                  <h2>{name}</h2>
+                  <p>{text}</p>
+                </article>
+              ))}
+            </section>
+            <p className="footnote">
+              以上为每次初代铸造概率，没有保底；繁育属性各有 50%
+              概率继承任一亲代。总供应量：
+              {loading ? "读取中…" : `${collection.supply} / 10,000`}。
+            </p>
+          </>
+        )}
+        {page !== "mint" && (
+          <>
+            <div className="page-heading">
+              <div>
+                <p className="eyebrow">
+                  {page === "breed"
+                    ? "CREATE THE NEXT GENERATION"
+                    : "OWNED BY YOUR WALLET"}
+                </p>
+                <h1>{page === "breed" ? "新一代，从这里开始。" : "我的狮群"}</h1>
+              </div>
+              <button disabled={busy || loading} onClick={() => setRefresh((n) => n + 1)}>
+                刷新收藏
+              </button>
+            </div>
+            {!account ? (
+              <div className="empty">
+                <PawPrint size={40} />
+                <h2>连接钱包，查看你的狮子</h2>
+                <p>收藏来自区块链，跟随钱包地址。</p>
+                <button className="primary" onClick={connectWallet} disabled={busy}>
+                  连接钱包
+                </button>
+              </div>
+            ) : (
+              <>
+                {page === "breed" && (
+                  <section className="breed-panel">
+                    <h2>选择两只亲代</h2>
+                    <p>
+                      每项外观各有 50%
+                      概率继承任一亲代，无隐藏基因或变异。代数为双亲较高代数 +1，冷却 5
+                      分钟。
+                    </p>
+                    <div className="parent-selectors">
+                      {[
+                        ["选择亲代 A", parentA, setParentA],
+                        ["选择亲代 B", parentB, setParentB],
+                      ].map(([label, value, setter]) => (
+                        <label key={label}>
+                          {label}
+                          <select
+                            aria-label={label}
+                            value={value}
+                            disabled={busy || loading}
+                            onChange={(event) => setter(event.target.value)}
+                          >
+                            <option value="">请选择</option>
+                            {collection.lions.map((lion) => (
+                              <option value={lion.id} key={lion.id}>
+                                #{lion.id} · {traitLabels(lion)[0][1]} · Gen{" "}
+                                {lion.generation}
+                              </option>
+                            ))}
+                          </select>
+                        </label>
+                      ))}
+                    </div>
+                    <button
+                      className="primary"
+                      disabled={busy || loading || !a || !b || a.id === b.id || wait > 0}
+                      onClick={() => perform("breed", [a.id, b.id])}
+                    >
+                      {busy ? "处理中…" : wait ? `冷却中 · ${wait} 秒` : "繁育新狮子"}
+                    </button>
+                    {a && b && a.id === b.id && (
+                      <p role="alert">请选择两只不同的狮子。</p>
+                    )}
+                  </section>
+                )}
+                <p className="collection-count">
+                  已加载 {collection.lions.length} / {collection.total} 只
+                  {loading && " · 读取中…"}
+                </p>
+                {!loading && !loadError && collection.total === 0 && (
+                  <div className="empty">
+                    <h2>还没有狮子</h2>
+                    <p>铸造你的第一只 NFT，之后可以转赠或繁育。</p>
+                    <button onClick={() => setPage("mint")}>去铸造</button>
+                  </div>
+                )}
+                <div className="lion-grid">
+                  {collection.lions.map((lion) => (
+                    <button
+                      className="lion-card"
+                      key={lion.id}
+                      disabled={busy}
+                      onClick={() => {
+                        setDetail(lion);
+                        setRecipient("");
+                      }}
+                    >
+                      <div className="card-art">
+                        <span className="badge">{rarityOf(lion)}</span>
+                        <img
+                          src={lion.image}
+                          alt={`狮子 #${lion.id}，${traitLabels(lion)[0][1]}`}
+                        />
+                      </div>
+                      <div className="card-info">
+                        <strong>狮子 #{lion.id}</strong>
+                        <span>Gen {lion.generation}</span>
+                        <p>
+                          {traitLabels(lion)[0][1]} <ArrowUpRight size={17} />
+                        </p>
+                      </div>
+                    </button>
+                  ))}
+                </div>
+                {collection.lions.length < collection.total && (
+                  <button
+                    className="load-more"
+                    disabled={busy || loading}
+                    onClick={() => setLimit((n) => n + 12)}
+                  >
+                    加载更多狮子（繁育可选）
+                  </button>
+                )}
+              </>
+            )}
+          </>
+        )}
+      </main>
+      <footer>
+        <span>LIONVERSE · 课程测试网项目</span>
+        {EXPLORER && CONFIGURED && (
+          <a href={`${EXPLORER}/address/${ADDRESS}`} target="_blank" rel="noreferrer">
+            查看合约 ↗
+          </a>
+        )}
+        <span>React · Ethers.js · ERC-721</span>
+      </footer>
+      {detail && (
+        <Modal
+          title={`狮子 #${detail.id} 详情`}
+          busy={busy}
+          close={() => setDetail(null)}
+        >
+          <div className="detail-layout">
+            <div className="detail-art">
+              <img src={detail.image} alt={`狮子 #${detail.id}`} />
+            </div>
+            <div className="detail-content">
+              {notice && (
+                <div
+                  role={notice.error ? "alert" : "status"}
+                  className={notice.error ? "notice error" : "notice"}
+                >
+                  {notice.text}
+                  {hash &&
+                    (EXPLORER ? (
+                      <a href={`${EXPLORER}/tx/${hash}`} target="_blank" rel="noreferrer">
+                        查看交易 ↗
+                      </a>
+                    ) : (
+                      <small>交易：{hash}</small>
+                    ))}
+                </div>
+              )}
+              <p className="eyebrow">
+                {rarityOf(detail)} · GEN {detail.generation}
+              </p>
+              <h2>狮子 #{detail.id}</h2>
+              <dl>
+                {traitLabels(detail).map(([label, value]) => (
+                  <div key={label}>
+                    <dt>{label}</dt>
+                    <dd>{value}</dd>
+                  </div>
+                ))}
+              </dl>
+              <p className="owner">
+                主人：<span title={detail.owner}>{shortAddress(detail.owner)}</span>
+              </p>
+              <p>出生：{new Date(detail.bornAt * 1000).toLocaleString()}</p>
+              <div className="parents">
+                父母：
+                {detail.parentA ? (
+                  <>
+                    <button disabled={busy} onClick={() => showParent(detail.parentA)}>
+                      #{detail.parentA}
+                    </button>{" "}
+                    ×{" "}
+                    <button disabled={busy} onClick={() => showParent(detail.parentB)}>
+                      #{detail.parentB}
+                    </button>
+                  </>
+                ) : (
+                  "初代"
+                )}
+              </div>
+              <p>
+                繁育状态：
+                {detail.nextBreedAt * 1000 > now
+                  ? `冷却中 · ${Math.ceil((detail.nextBreedAt * 1000 - now) / 1000)} 秒`
+                  : "可以繁育"}
+              </p>
+              {EXPLORER && (
+                <a
+                  href={`${EXPLORER}/token/${ADDRESS}?a=${detail.id}`}
+                  target="_blank"
+                  rel="noreferrer"
+                >
+                  在 Etherscan 查看 ↗
+                </a>
+              )}
+              {ownDetail && (
+                <form
+                  onSubmit={(event) => {
+                    event.preventDefault();
+                    perform("transfer", [recipient, detail.id]);
+                  }}
+                >
+                  <label htmlFor="recipient">转赠到钱包地址</label>
+                  <input
+                    id="recipient"
+                    placeholder="0x…"
+                    value={recipient}
+                    disabled={busy}
+                    onChange={(event) => setRecipient(event.target.value)}
+                    required
+                  />
+                  <button className="primary" disabled={busy || !recipient}>
+                    转赠 NFT
+                  </button>
+                </form>
+              )}
+            </div>
           </div>
         </Modal>
-      )}
-
-      {detail && (
-        <LionDetail
-          {...{
-            detail,
-            setDetail,
-            busy,
-            newborn,
-            mode,
-            isOwned,
-            now,
-            tell,
-            recipient,
-            setRecipient,
-            perform,
-            navigate,
-            startBreeding,
-            setFamilyRoot,
-          }}
-        />
       )}
     </div>
   );

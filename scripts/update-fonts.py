@@ -1,6 +1,6 @@
 """Refresh the local Chinese font subset after changing static interface text.
 
-Run with this project's .venv Python. This optional maintenance task uses only
+Run with Python 3. This optional maintenance task uses only
 the standard library and reads source files, never environment files or wallets.
 """
 
@@ -16,8 +16,6 @@ def main():
     for source in (root / "src").rglob("*"):
         if source.suffix in {".js", ".jsx"}:
             characters.update(character for character in source.read_text() if ord(character) > 127)
-    # Trait names are part of the UI, but deliberately live outside React code.
-    characters.update(character for character in (root / "shared/genetics.json").read_text() if ord(character) > 127)
     parameters = urllib.parse.urlencode({
         "family": "Noto Sans SC:wght@400;500;600;700",
         "display": "swap",

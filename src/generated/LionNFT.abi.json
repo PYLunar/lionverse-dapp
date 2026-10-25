@@ -130,11 +130,6 @@
   },
   {
     "inputs": [],
-    "name": "InvalidPageSize",
-    "type": "error"
-  },
-  {
-    "inputs": [],
     "name": "NotParentOwner",
     "type": "error"
   },
@@ -290,32 +285,6 @@
   },
   {
     "inputs": [],
-    "name": "GENETICS_VERSION",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
-    "name": "MAX_CHILD_PAGE",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [],
     "name": "MAX_SUPPLY",
     "outputs": [
       {
@@ -396,79 +365,12 @@
         "type": "uint256"
       }
     ],
-    "name": "childCount",
-    "outputs": [
-      {
-        "internalType": "uint256",
-        "name": "",
-        "type": "uint256"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "offset",
-        "type": "uint256"
-      },
-      {
-        "internalType": "uint256",
-        "name": "limit",
-        "type": "uint256"
-      }
-    ],
-    "name": "childrenOf",
-    "outputs": [
-      {
-        "internalType": "uint256[]",
-        "name": "ids",
-        "type": "uint256[]"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      }
-    ],
     "name": "getApproved",
     "outputs": [
       {
         "internalType": "address",
         "name": "",
         "type": "address"
-      }
-    ],
-    "stateMutability": "view",
-    "type": "function"
-  },
-  {
-    "inputs": [
-      {
-        "internalType": "uint256",
-        "name": "tokenId",
-        "type": "uint256"
-      }
-    ],
-    "name": "getGenes",
-    "outputs": [
-      {
-        "internalType": "uint8[18]",
-        "name": "",
-        "type": "uint8[18]"
       }
     ],
     "stateMutability": "view",
@@ -507,31 +409,6 @@
             "type": "uint8"
           },
           {
-            "internalType": "uint8",
-            "name": "pattern",
-            "type": "uint8"
-          },
-          {
-            "internalType": "uint8",
-            "name": "temperament",
-            "type": "uint8"
-          },
-          {
-            "internalType": "uint8",
-            "name": "aura",
-            "type": "uint8"
-          },
-          {
-            "internalType": "uint8",
-            "name": "crown",
-            "type": "uint8"
-          },
-          {
-            "internalType": "uint8",
-            "name": "rarity",
-            "type": "uint8"
-          },
-          {
             "internalType": "uint32",
             "name": "generation",
             "type": "uint32"
@@ -549,11 +426,6 @@
           {
             "internalType": "uint256",
             "name": "parentB",
-            "type": "uint256"
-          },
-          {
-            "internalType": "uint256",
-            "name": "dna",
             "type": "uint256"
           }
         ],
