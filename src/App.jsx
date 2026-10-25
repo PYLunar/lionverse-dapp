@@ -1,6 +1,7 @@
 import { useEffect, useRef, useState } from "react";
 import { PawPrint, Wallet, ArrowUpRight } from "lucide-react";
 import Modal from "./components/Modal.jsx";
+import MarketPage from "./components/MarketPage.jsx";
 import { shortAddress, rarityOf, traitLabels } from "./domain/catalog.js";
 import {
   ADDRESS,
@@ -8,6 +9,8 @@ import {
   NETWORK,
   EXPLORER,
   CONFIGURED,
+  MARKET_CONFIGURED,
+  formatEther,
   connect,
   loadCollection,
   loadLion,
@@ -19,6 +22,7 @@ const PAGES = [
   ["mint", "铸造"],
   ["collection", "我的狮群"],
   ["breed", "繁育"],
+  ["market", "交易市场"],
 ];
 
 export default function App() {
@@ -34,6 +38,7 @@ export default function App() {
   const [hash, setHash] = useState("");
   const [detail, setDetail] = useState(null);
   const [recipient, setRecipient] = useState("");
+  const [salePrice, setSalePrice] = useState("");
   const [parentA, setParentA] = useState("");
   const [parentB, setParentB] = useState("");
   const [now, setNow] = useState(Date.now());
@@ -117,11 +122,16 @@ export default function App() {
       setHash(result.hash);
       setNotice({
         text:
-          action === "transfer"
-            ? "转赠已在链上确认。"
-            : result.lion
-              ? "新狮子已在链上诞生！"
-              : "铸造已确认，详情暂不可用，请刷新收藏。",
+          {
+            transfer: "转赠已在链上确认。",
+            list: "NFT 已上架；成交后请到市场领取款项。",
+            buy: "购买成功，NFT 已转入你的钱包。",
+            cancel: "挂单已撤销，NFT 已回到你的钱包。",
+            withdraw: "成交款已领取到钱包。",
+          }[action] ||
+          (result.lion
+            ? "新狮子已在链上诞生！"
+            : "铸造已确认，详情暂不可用，请刷新收藏。"),
       });
       const scope = identity.current;
       const [accounts, chain] = await Promise.allSettled([
@@ -138,6 +148,7 @@ export default function App() {
         setAccount(result.account);
         setDetail(result.lion);
         setRecipient("");
+        setSalePrice("");
         setParentA("");
         setParentB("");
       }
@@ -297,7 +308,20 @@ export default function App() {
             </p>
           </>
         )}
-        {page !== "mint" && (
+        {page === "market" && (
+          <MarketPage
+            account={account}
+            refresh={refresh}
+            busy={busy}
+            onAction={perform}
+            onConnect={connectWallet}
+            onDetail={(lion) => {
+              setDetail(lion);
+              setNotice(null);
+            }}
+          />
+        )}
+        {["collection", "breed"].includes(page) && (
           <>
             <div className="page-heading">
               <div>
@@ -387,6 +411,8 @@ export default function App() {
                       onClick={() => {
                         setDetail(lion);
                         setRecipient("");
+                        setSalePrice("");
+                        setNotice(null);
                       }}
                     >
                       <div className="card-art">
@@ -469,7 +495,10 @@ export default function App() {
                 ))}
               </dl>
               <p className="owner">
-                主人：<span title={detail.owner}>{shortAddress(detail.owner)}</span>
+                {detail.listing ? "卖家：" : "主人："}
+                <span title={detail.listing?.seller || detail.owner}>
+                  {shortAddress(detail.listing?.seller || detail.owner)}
+                </span>
               </p>
               <p>出生：{new Date(detail.bornAt * 1000).toLocaleString()}</p>
               <div className="parents">
@@ -504,25 +533,76 @@ export default function App() {
                 </a>
               )}
               {ownDetail && (
-                <form
-                  onSubmit={(event) => {
-                    event.preventDefault();
-                    perform("transfer", [recipient, detail.id]);
-                  }}
-                >
-                  <label htmlFor="recipient">转赠到钱包地址</label>
-                  <input
-                    id="recipient"
-                    placeholder="0x…"
-                    value={recipient}
+                <>
+                  <form
+                    onSubmit={(event) => {
+                      event.preventDefault();
+                      perform("transfer", [recipient, detail.id]);
+                    }}
+                  >
+                    <label htmlFor="recipient">转赠到钱包地址</label>
+                    <input
+                      id="recipient"
+                      placeholder="0x…"
+                      value={recipient}
+                      disabled={busy}
+                      onChange={(event) => setRecipient(event.target.value)}
+                      required
+                    />
+                    <button className="primary" disabled={busy || !recipient}>
+                      转赠 NFT
+                    </button>
+                  </form>
+                  {MARKET_CONFIGURED && (
+                    <form
+                      onSubmit={(event) => {
+                        event.preventDefault();
+                        perform("list", [detail.id, salePrice]);
+                      }}
+                    >
+                      <label htmlFor="sale-price">挂单价格（ETH）</label>
+                      <input
+                        id="sale-price"
+                        inputMode="decimal"
+                        placeholder="例如 0.01"
+                        value={salePrice}
+                        onChange={(event) => setSalePrice(event.target.value)}
+                        disabled={busy}
+                        required
+                      />
+                      <p>
+                        上架需要授权和挂单两笔交易。挂单期间 NFT
+                        由市场合约暂存，不能繁育；撤单后返还。
+                      </p>
+                      <button className="primary" disabled={busy || !salePrice}>
+                        上架出售
+                      </button>
+                    </form>
+                  )}
+                </>
+              )}
+              {detail.listing && (
+                <div className="market-offer">
+                  <strong>挂单价：{formatEther(detail.listing.price)} ETH</strong>
+                  <button
+                    className="primary"
                     disabled={busy}
-                    onChange={(event) => setRecipient(event.target.value)}
-                    required
-                  />
-                  <button className="primary" disabled={busy || !recipient}>
-                    转赠 NFT
+                    onClick={() =>
+                      perform(
+                        detail.listing.seller.toLowerCase() === account.toLowerCase()
+                          ? "cancel"
+                          : "buy",
+                        detail.listing.seller.toLowerCase() === account.toLowerCase()
+                          ? [detail.id]
+                          : [detail.id, detail.listing.price],
+                      )
+                    }
+                  >
+                    {detail.listing.seller.toLowerCase() === account.toLowerCase()
+                      ? "撤销挂单"
+                      : "购买 NFT"}
                   </button>
-                </form>
+                </div>
               )}
             </div>
           </div>

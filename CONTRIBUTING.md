@@ -1,8 +1,9 @@
 # Development
 
-The coursework edition keeps only four visible traits. Add no hidden genetics, browser collection simulation, or marketplace without an explicit scope change.
+The coursework edition keeps only four visible traits and a fixed-price ETH marketplace. Add no hidden genetics or browser collection simulation without an explicit scope change.
 
 - Solidity ownership/state: contracts/LionNFT.sol.
+- Fixed-price escrow and ETH credits: contracts/LionMarketplace.sol.
 - Trait rules: contracts/LionTraits.sol.
 - On-chain art: contracts/LionArt.sol.
 - UI labels: src/domain/catalog.js.

@@ -414,6 +414,41 @@ form {
   padding-top: 20px;
   border-top: 1px solid #dde2d4;
 }
+.market-balance {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 18px;
+  padding: 22px;
+  background: #eaf0df;
+  border-radius: 12px;
+  margin: 24px 0;
+}
+.market-balance strong {
+  display: block;
+  font-size: 26px;
+  margin-top: 8px;
+}
+.market-card {
+  border: 1px solid #d9dfd2;
+  border-radius: 12px;
+  overflow: hidden;
+  background: #fffef9;
+}
+.market-card .lion-card {
+  width: 100%;
+  border: 0;
+  border-radius: 0;
+}
+.market-offer {
+  display: grid;
+  gap: 12px;
+  padding: 18px;
+  border-top: 1px solid #e0e4d6;
+}
+.market-offer small {
+  color: #60715e;
+}
 @media (max-width: 700px) {
   header {
     flex-wrap: wrap;
@@ -430,6 +465,10 @@ form {
   }
   nav button {
     flex: 1;
+    padding: 10px 7px;
+  }
+  .market-balance {
+    flex-wrap: wrap;
   }
   main {
     padding: 18px;

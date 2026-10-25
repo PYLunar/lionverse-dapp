@@ -107,6 +107,49 @@ test("local EVM: mint, reject, inherit, transfer, change account and inspect par
     await expect(
       dialog.getByRole("button", { name: "转赠 NFT", exact: true }),
     ).toHaveCount(0);
+    await page.getByLabel("关闭弹窗").click();
+    await page.locator(".lion-card").click();
+    const childId = (await dialog.getByRole("heading").innerText()).match(/#(\d+)/)[1];
+    await dialog.getByLabel("挂单价格（ETH）").fill("0");
+    await dialog.getByRole("button", { name: "上架出售", exact: true }).click();
+    await expect(dialog.getByRole("alert")).toContainText("必须大于 0");
+    await dialog.getByLabel("挂单价格（ETH）").fill("0.01");
+    await dialog.getByRole("button", { name: "上架出售", exact: true }).click();
+    await expect(page.getByRole("status")).toContainText("NFT 已上架", {
+      timeout: 20000,
+    });
+    await page.getByRole("button", { name: "交易市场", exact: true }).click();
+    await expect(page.locator(".market-card")).toHaveCount(1);
+    await expect(page.locator(".market-card")).toContainText("0.01 ETH");
+    await page.getByRole("button", { name: "撤销挂单", exact: true }).click();
+    await expect(dialog).toBeVisible({ timeout: 20000 });
+    await expect(dialog.getByRole("status")).toContainText("已撤销");
+    await dialog.getByLabel("挂单价格（ETH）").fill("0.01");
+    await dialog.getByRole("button", { name: "上架出售", exact: true }).click();
+    await expect(dialog).toHaveCount(0, { timeout: 20000 });
+    await expect(page.locator(".market-card")).toHaveCount(1);
+    await page.evaluate((next) => window.__setAccount(next), accounts[0]);
+    await page.locator(".wallet-button").click();
+    await page.getByRole("button", { name: "购买 NFT", exact: true }).click();
+    await expect(dialog).toBeVisible({ timeout: 20000 });
+    await expect(dialog.getByRole("status")).toContainText("购买成功");
+    await expect(dialog.getByRole("heading")).toHaveText("狮子 #" + childId);
+    await page.getByLabel("关闭弹窗").click();
+    await expect(page.locator(".market-card")).toHaveCount(0);
+    await page.getByRole("button", { name: "我的狮群", exact: true }).click();
+    await expect(page.locator(".lion-card")).toHaveCount(3);
+    await page.evaluate((next) => window.__setAccount(next), accounts[1]);
+    await page.locator(".wallet-button").click();
+    await page.getByRole("button", { name: "交易市场", exact: true }).click();
+    await expect(page.locator(".market-balance")).toContainText("0.01 ETH");
+    await page.getByRole("button", { name: "领取成交款", exact: true }).click();
+    await expect(page.getByRole("status")).toContainText("已领取到钱包", {
+      timeout: 20000,
+    });
+    await expect(page.locator(".market-balance")).toContainText("0.0 ETH");
+    await expect(
+      page.getByRole("button", { name: "领取成交款", exact: true }),
+    ).toBeDisabled();
     expect(errors).toEqual([]);
   } finally {
     rpc.destroy();

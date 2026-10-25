@@ -1,6 +1,6 @@
 # Lionverse / 狮屿 — Coursework Edition
 
-A small React + Ethers.js + Solidity DApp: mint a lion NFT, view your wallet's collection, breed two lions, and transfer an NFT.
+A small React + Ethers.js + Solidity DApp: mint, collect, breed, transfer and trade lion NFTs at fixed ETH prices.
 
 ## Data and rules
 
@@ -16,7 +16,19 @@ Within natural species, field / snow / gold / diamond retain relative weights 62
 
 For breeding, each of the four traits independently inherits one parent's visible value with a 50% chance. There are no hidden genes or mutations. The child generation is max(parent generations) + 1. Both parents must be different and owned by the caller. Parents and newborns rest for 5 minutes. Minting is free except network gas; the cap of 10,000 includes offspring.
 
-Block-based randomness is sufficient for an educational testnet demo but is influenceable and unsuitable for paid draws. This edition does not implement payment, trading, or burning.
+Block-based randomness is sufficient for an educational testnet demo but is influenceable and unsuitable for paid draws. Minting remains free. The separate market supports fixed-price trading; burning is not implemented.
+
+## NFT market
+
+- Open an owned lion's detail, enter a price in ETH and select 上架出售.
+- Approve only that token, then confirm the listing (normally two wallet transactions). Cancelling the second step leaves the NFT in the wallet; the approval remains and may be revoked or reused.
+- Listing transfers the NFT into LionMarketplace escrow. It is absent from the seller's wallet collection and cannot breed while listed.
+- Buyers pay the exact listed ETH amount plus network gas. The transfer and seller credit occur atomically; a failed NFT transfer rolls the whole purchase back.
+- Only the seller can cancel an active listing. Cancellation returns the NFT.
+- After a sale, the seller opens the market and selects 领取成交款. No platform fee or royalty is deducted.
+- Sale events record token ID, seller, buyer and price in wei. A normal wallet transfer does not imply a sale.
+
+The market is bound to a single LionNFT contract. Use the listing flow rather than transferring NFTs directly to the market address. Unsolicited safe transfers are rejected; an unsafe ERC-721 transferFrom can still send a token without a listing and there is no admin rescue. The test suite covers permissions, exact payment, repeat buys, receiver rejection, withdrawal failure and withdrawal reentry.
 
 ## Run on Windows PowerShell
 
@@ -42,7 +54,15 @@ npm run dev -- --host 127.0.0.1
 Open http://127.0.0.1:5173. Connect MetaMask in a browser with the extension enabled.
 The local network RPC is http://127.0.0.1:8545, chain ID 31337. Import one of the **public, local-only** Hardhat test accounts. Never send real assets to these accounts. The in-app browser may not expose a wallet extension.
 
-Deployment updates only frontend connection settings in .env.local and saves the address/transaction hash in deployments/31337.json. Restarting the local chain clears its state: deploy again. No browser-based demo collection is used; the collection is read from the configured contract.
+Full deployment creates both NFT and market contracts, updates only frontend connection settings in .env.local, and saves both addresses/transaction hashes in deployments/31337.json. Restarting the local chain clears its state: deploy again. No browser-based demo collection is used; the collection is read from the configured contract.
+
+To add a market to an existing local simplified NFT contract without changing that NFT address or its collection:
+
+```powershell
+npm run deploy:market:local
+```
+
+This uses the current VITE_CONTRACT_ADDRESS / VITE_CHAIN_ID. Redeploying the market does not migrate old listings or proceeds: use their original market contract to cancel or withdraw.
 
 ## Sepolia
 
@@ -53,7 +73,7 @@ npm run deploy:sepolia
 npm run dev
 ```
 
-Deployment writes VITE*CONTRACT_ADDRESS, VITE_CHAIN_ID, VITE_RPC_URL. Never put secrets in VITE* variables. Add the deployed address and confirmed transaction links to your submission after actual deployment; none is claimed here.
+Deployment writes `VITE_CONTRACT_ADDRESS`, `VITE_MARKET_ADDRESS`, `VITE_CHAIN_ID`, `VITE_RPC_URL`. Never put secrets in `VITE_` variables. Add both deployed addresses and confirmed transaction links to your submission after actual deployment; none is claimed here.
 
 ## Checks
 
@@ -63,7 +83,7 @@ npx playwright install chromium
 npm run test:ui
 ```
 
-check runs ESLint, Prettier, contract tests and production build. UI tests check the three-page interface and wallet-required state. To run the full browser-to-EVM flow, keep the local chain running and deploy a **new empty contract** first:
+check runs ESLint, Prettier, contract tests and production build. UI tests check the four-page interface and wallet-required state. To run the full browser-to-EVM flow, keep the local chain running and deploy a **new empty NFT/market pair** first:
 
 ```powershell
 npm run deploy:local
@@ -72,17 +92,20 @@ npm run test:ui
 Remove-Item Env:LION_CHAIN_TEST
 ```
 
-The test uses unlocked local accounts via a test-only wallet adapter. It mints two NFTs, rejects a transaction, advances local EVM time, breeds, transfers, switches accounts and reads a parent owned by someone else. It does not replace a real MetaMask/Sepolia demonstration.
+The test uses unlocked local accounts via a test-only wallet adapter. It mints two NFTs, rejects a transaction, advances local EVM time, breeds, transfers, switches accounts, reads a parent, lists, cancels, buys and withdraws the sale proceeds. It does not replace a real MetaMask/Sepolia demonstration.
 
 ## Source map
 
 - contracts/LionNFT.sol — ERC-721 ownership, mint, breed, cooldown and metadata
 - contracts/LionTraits.sol — four-trait random selection and inheritance
 - contracts/LionArt.sol — on-chain SVG renderer
-- src/App.jsx — Mint / My Lions / Breed and NFT detail/transfer
+- contracts/LionMarketplace.sol — fixed-price escrow, purchase and withdrawal
+- src/App.jsx — Mint / My Lions / Breed / Market and NFT detail
+- src/components/MarketPage.jsx — listings, purchase/cancel and seller proceeds
 - src/services/blockchain.js — wallet, reads, transaction confirmation
 - src/domain/catalog.js — display names and derived rarity
 - scripts/deploy.cjs — local/Sepolia deployment
+- scripts/deploy-market.cjs — add a market to an existing local NFT deployment
 - scripts/sync-abi.mjs — copy compiled ABI to frontend
 - test/ — Solidity behavior and probability boundary tests
 - tests/ui/ — browser checks and optional real local-EVM scenario

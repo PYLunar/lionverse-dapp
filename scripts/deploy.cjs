@@ -1,6 +1,8 @@
 const fs = require("node:fs");
 const path = require("node:path");
 const hre = require("hardhat");
+const updateEnv = require("./env.cjs");
+const { deployMarket } = require("./deploy-market.cjs");
 
 async function main() {
   const [deployer] = await hre.ethers.getSigners();
@@ -17,6 +19,7 @@ async function main() {
   await contract.waitForDeployment();
   const address = await contract.getAddress();
   const { chainId } = await hre.ethers.provider.getNetwork();
+  const market = await deployMarket(address);
   fs.mkdirSync("deployments", { recursive: true });
   const previousPath = path.join("deployments", `${chainId}.json`);
   if (fs.existsSync(previousPath)) {
@@ -33,6 +36,7 @@ async function main() {
     JSON.stringify(
       {
         address,
+        ...market,
         model: "four-visible-traits",
         chainId: Number(chainId),
         deployer: deployer.address,
@@ -43,24 +47,18 @@ async function main() {
     ) + "\n",
   );
   // Keep secrets intact; update only frontend connection settings.
-  const envPath = ".env.local";
-  let env = fs.existsSync(envPath) ? fs.readFileSync(envPath, "utf8") : "";
   const settings = {
     VITE_CONTRACT_ADDRESS: address,
+    VITE_MARKET_ADDRESS: market.marketAddress,
     VITE_CHAIN_ID: String(chainId),
     VITE_RPC_URL:
       chainId === 31337n
         ? "http://127.0.0.1:8545"
         : process.env.SEPOLIA_RPC_URL || "https://ethereum-sepolia-rpc.publicnode.com",
   };
-  for (const [key, value] of Object.entries(settings)) {
-    const line = new RegExp(`^${key}=.*$`, "m");
-    env = line.test(env)
-      ? env.replace(line, () => `${key}=${value}`)
-      : `${env.trimEnd()}\n${key}=${value}\n`;
-  }
-  fs.writeFileSync(envPath, env.trimStart());
+  updateEnv(settings);
   console.log(`LionNFT deployed: ${address} (chain ${chainId})`);
+  console.log(`LionMarketplace deployed: ${market.marketAddress}`);
   console.log("Updated .env.local. Restart the frontend to use the deployed contract.");
 }
 

@@ -13,6 +13,7 @@
     "chain": "hardhat node",
     "deploy:local": "npm run compile && hardhat run scripts/deploy.cjs --no-compile --network localhost",
     "deploy:sepolia": "npm run compile && hardhat run scripts/deploy.cjs --no-compile --network sepolia",
+    "deploy:market:local": "npm run compile && hardhat run scripts/deploy-market.cjs --no-compile --network localhost",
     "lint": "eslint . --max-warnings=0",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
