@@ -414,6 +414,25 @@ form {
   padding-top: 20px;
   border-top: 1px solid #dde2d4;
 }
+.burn-section {
+  margin-top: 24px;
+  padding-top: 18px;
+  border-top: 1px solid #e1c6bb;
+}
+.danger-button {
+  background: #9d3f32;
+  color: #fff;
+  border-color: #9d3f32;
+}
+.danger-button:hover:not(:disabled) {
+  background: #7f2d24;
+  color: #fff;
+}
+.burn-confirm {
+  padding: 36px 28px;
+  max-width: 600px;
+  margin: auto;
+}
 .market-balance {
   display: flex;
   justify-content: space-between;

@@ -1,6 +1,6 @@
 # Lionverse / 狮屿 — Coursework Edition
 
-A small React + Ethers.js + Solidity DApp: mint, collect, breed, transfer and trade lion NFTs at fixed ETH prices.
+A small React + Ethers.js + Solidity DApp: mint, collect, breed, transfer, trade and burn lion NFTs.
 
 ## Data and rules
 
@@ -14,9 +14,21 @@ Founder mint probabilities:
 
 Within natural species, field / snow / gold / diamond retain relative weights 6200 / 2400 / 900 / 350. Fur has 6 choices, mane 3, eyes 4. Rarity is a UI label derived from species, not an extra stored random trait.
 
-For breeding, each of the four traits independently inherits one parent's visible value with a 50% chance. There are no hidden genes or mutations. The child generation is max(parent generations) + 1. Both parents must be different and owned by the caller. Parents and newborns rest for 5 minutes. Minting is free except network gas; the cap of 10,000 includes offspring.
+For breeding, each of the four traits independently inherits one parent's visible value with a 50% chance. There are no hidden genes or mutations. The child generation is max(parent generations) + 1. Both parents must be different and owned by the caller. Parents and newborns rest for 5 minutes. Minting is free except network gas; the lifetime cap of 10,000 includes offspring and burned tokens.
 
-Block-based randomness is sufficient for an educational testnet demo but is influenceable and unsuitable for paid draws. Minting remains free. The separate market supports fixed-price trading; burning is not implemented.
+Block-based randomness is sufficient for an educational testnet demo but is influenceable and unsuitable for paid draws. Minting remains free. The separate market supports fixed-price trading.
+
+## Permanent NFT burning
+
+Open an owned lion's detail, choose 销毁 NFT, enter its exact numeric token ID and select 确认永久销毁. The wallet still asks to sign the burn transaction. Closing the confirmation or rejecting the wallet request leaves the NFT intact.
+
+Only the current owner can burn; token approvals and operator approvals do not grant that permission. A listed NFT belongs to the market escrow, so the seller must cancel its listing first. Burning provides no refund or reward.
+
+Burned tokens disappear from wallet/global enumeration and cannot be transferred, listed or bred. IDs are never reused. `totalSupply()` is the active count, while `totalMinted()` counts lifetime births; burning does not reopen minting capacity.
+
+For lineage, `getLion()` preserves historical traits and parent IDs. `isBurned()` distinguishes a destroyed known token from one never minted. Standard `ownerOf()` and `tokenURI()` reject burned IDs; `historicalTokenURI()` explicitly returns archived metadata/SVG with a burned flag. A descendant's parent link shows “已销毁 · 历史记录” without actionable ownership controls.
+
+This feature requires deploying a new NFT and its matching market; an existing non-upgradeable contract cannot gain burn functionality. Deployments archive the old address record. Old NFTs, listings and seller proceeds are not automatically migrated.
 
 ## NFT market
 
@@ -92,11 +104,11 @@ npm run test:ui
 Remove-Item Env:LION_CHAIN_TEST
 ```
 
-The test uses unlocked local accounts via a test-only wallet adapter. It mints two NFTs, rejects a transaction, advances local EVM time, breeds, transfers, switches accounts, reads a parent, lists, cancels, buys and withdraws the sale proceeds. It does not replace a real MetaMask/Sepolia demonstration.
+The test uses unlocked local accounts via a test-only wallet adapter. It mints two NFTs, rejects a transaction, advances local EVM time, breeds, transfers, switches accounts, reads a parent, lists, cancels, buys and withdraws proceeds. It also tests burn confirmation, wallet rejection, destruction, archived-parent navigation and non-reused IDs. It does not replace a real MetaMask/Sepolia demonstration.
 
 ## Source map
 
-- contracts/LionNFT.sol — ERC-721 ownership, mint, breed, cooldown and metadata
+- contracts/LionNFT.sol — ERC-721 ownership, mint, breed, burn, lifetime cap and archived metadata
 - contracts/LionTraits.sol — four-trait random selection and inheritance
 - contracts/LionArt.sol — on-chain SVG renderer
 - contracts/LionMarketplace.sol — fixed-price escrow, purchase and withdrawal

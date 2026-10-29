@@ -37,7 +37,7 @@ async function main() {
       {
         address,
         ...market,
-        model: "four-visible-traits",
+        model: "four-visible-traits-with-burn",
         chainId: Number(chainId),
         deployer: deployer.address,
         transactionHash: contract.deploymentTransaction().hash,

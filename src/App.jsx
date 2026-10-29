@@ -28,7 +28,12 @@ const PAGES = [
 export default function App() {
   const [page, setPage] = useState("mint");
   const [account, setAccount] = useState("");
-  const [collection, setCollection] = useState({ lions: [], total: 0, supply: 0 });
+  const [collection, setCollection] = useState({
+    lions: [],
+    total: 0,
+    supply: 0,
+    minted: 0,
+  });
   const [limit, setLimit] = useState(12);
   const [refresh, setRefresh] = useState(0);
   const [loading, setLoading] = useState(false);
@@ -39,6 +44,8 @@ export default function App() {
   const [detail, setDetail] = useState(null);
   const [recipient, setRecipient] = useState("");
   const [salePrice, setSalePrice] = useState("");
+  const [burnTarget, setBurnTarget] = useState(null);
+  const [burnInput, setBurnInput] = useState("");
   const [parentA, setParentA] = useState("");
   const [parentB, setParentB] = useState("");
   const [now, setNow] = useState(Date.now());
@@ -55,7 +62,9 @@ export default function App() {
     function reset() {
       identity.current++;
       setAccount("");
-      setCollection({ lions: [], total: 0, supply: 0 });
+      setCollection({ lions: [], total: 0, supply: 0, minted: 0 });
+      setBurnTarget(null);
+      setBurnInput("");
       setDetail(null);
       setRecipient("");
       setParentA("");
@@ -128,6 +137,7 @@ export default function App() {
             buy: "购买成功，NFT 已转入你的钱包。",
             cancel: "挂单已撤销，NFT 已回到你的钱包。",
             withdraw: "成交款已领取到钱包。",
+            burn: "NFT 已永久销毁，历史属性与父母记录仍可查询。",
           }[action] ||
           (result.lion
             ? "新狮子已在链上诞生！"
@@ -149,6 +159,8 @@ export default function App() {
         setDetail(result.lion);
         setRecipient("");
         setSalePrice("");
+        setBurnTarget(null);
+        setBurnInput("");
         setParentA("");
         setParentB("");
       }
@@ -185,7 +197,10 @@ export default function App() {
     Math.ceil((Math.max(a?.nextBreedAt || 0, b?.nextBreedAt || 0) * 1000 - now) / 1000),
   );
   const ownDetail =
-    detail && account && detail.owner.toLowerCase() === account.toLowerCase();
+    detail &&
+    !detail.burned &&
+    account &&
+    detail.owner.toLowerCase() === account.toLowerCase();
 
   return (
     <div className="app-shell">
@@ -218,7 +233,7 @@ export default function App() {
           {NETWORK}
           <span>{CONFIGURED ? `合约 ${shortAddress(ADDRESS)}` : "尚未部署合约"}</span>
         </div>
-        {notice && !detail && (
+        {notice && !detail && !burnTarget && (
           <div
             role={notice.error ? "alert" : "status"}
             className={notice.error ? "notice error" : "notice"}
@@ -303,8 +318,9 @@ export default function App() {
             </section>
             <p className="footnote">
               以上为每次初代铸造概率，没有保底；繁育属性各有 50%
-              概率继承任一亲代。总供应量：
-              {loading ? "读取中…" : `${collection.supply} / 10,000`}。
+              概率继承任一亲代。累计铸造：
+              {loading ? "读取中…" : `${collection.minted} / 10,000`}； 当前存量：
+              {loading ? "读取中…" : collection.supply}。
             </p>
           </>
         )}
@@ -495,10 +511,16 @@ export default function App() {
                 ))}
               </dl>
               <p className="owner">
-                {detail.listing ? "卖家：" : "主人："}
-                <span title={detail.listing?.seller || detail.owner}>
-                  {shortAddress(detail.listing?.seller || detail.owner)}
-                </span>
+                {detail.burned ? (
+                  "已销毁 · 历史记录"
+                ) : (
+                  <>
+                    {detail.listing ? "卖家：" : "主人："}
+                    <span title={detail.listing?.seller || detail.owner}>
+                      {shortAddress(detail.listing?.seller || detail.owner)}
+                    </span>
+                  </>
+                )}
               </p>
               <p>出生：{new Date(detail.bornAt * 1000).toLocaleString()}</p>
               <div className="parents">
@@ -519,9 +541,13 @@ export default function App() {
               </div>
               <p>
                 繁育状态：
-                {detail.nextBreedAt * 1000 > now
-                  ? `冷却中 · ${Math.ceil((detail.nextBreedAt * 1000 - now) / 1000)} 秒`
-                  : "可以繁育"}
+                {detail.burned
+                  ? "已销毁，不能繁育"
+                  : detail.listing
+                    ? "挂单中，请先撤单"
+                    : detail.nextBreedAt * 1000 > now
+                      ? `冷却中 · ${Math.ceil((detail.nextBreedAt * 1000 - now) / 1000)} 秒`
+                      : "可以繁育"}
               </p>
               {EXPLORER && (
                 <a
@@ -579,6 +605,21 @@ export default function App() {
                       </button>
                     </form>
                   )}
+                  <div className="burn-section">
+                    <p>永久销毁会移除 NFT 所有权，不返还 ETH，也不会补回铸造额度。</p>
+                    <button
+                      className="danger-button"
+                      disabled={busy}
+                      onClick={() => {
+                        setBurnTarget(detail);
+                        setBurnInput("");
+                        setDetail(null);
+                        setNotice(null);
+                      }}
+                    >
+                      销毁 NFT
+                    </button>
+                  </div>
                 </>
               )}
               {detail.listing && (
@@ -605,6 +646,51 @@ export default function App() {
                 </div>
               )}
             </div>
+          </div>
+        </Modal>
+      )}
+      {burnTarget && (
+        <Modal
+          title={`确认销毁狮子 #${burnTarget.id}`}
+          busy={busy}
+          close={() => {
+            setDetail(burnTarget);
+            setBurnTarget(null);
+            setBurnInput("");
+          }}
+        >
+          <div className="burn-confirm">
+            <h2>永久销毁狮子 #{burnTarget.id}</h2>
+            <p>
+              此操作不可撤销。狮子将从收藏中移除，不能再转赠、交易或繁育。历史属性和父母记录仍保留；没有退款或奖励。
+            </p>
+            {notice && (
+              <div className="notice error" role={notice.error ? "alert" : "status"}>
+                {notice.text}
+              </div>
+            )}
+            <form
+              onSubmit={(event) => {
+                event.preventDefault();
+                if (burnInput === String(burnTarget.id)) perform("burn", [burnTarget.id]);
+              }}
+            >
+              <label htmlFor="burn-confirm-id">输入编号 {burnTarget.id} 确认销毁</label>
+              <input
+                id="burn-confirm-id"
+                inputMode="numeric"
+                autoComplete="off"
+                value={burnInput}
+                onChange={(event) => setBurnInput(event.target.value)}
+                disabled={busy}
+              />
+              <button
+                className="danger-button"
+                disabled={busy || burnInput !== String(burnTarget.id)}
+              >
+                {busy ? "等待钱包确认…" : "确认永久销毁"}
+              </button>
+            </form>
           </div>
         </Modal>
       )}

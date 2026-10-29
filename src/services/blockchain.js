@@ -72,17 +72,23 @@ export async function connect() {
 
 export async function loadLion(id, c, blockTag = "latest") {
   c ||= await reader();
-  const [data, owner, nextBreedAt, uri] = await Promise.all([
+  if (blockTag === "latest")
+    blockTag = Number(await readProvider.send("eth_blockNumber", []));
+  const [data, burned, nextBreedAt] = await Promise.all([
     c.getLion(id, { blockTag }),
-    c.ownerOf(id, { blockTag }),
+    c.isBurned(id, { blockTag }),
     c.nextBreedAt(id, { blockTag }),
-    c.tokenURI(id, { blockTag }),
+  ]);
+  const [owner, uri] = await Promise.all([
+    burned ? "0x0000000000000000000000000000000000000000" : c.ownerOf(id, { blockTag }),
+    burned ? c.historicalTokenURI(id, { blockTag }) : c.tokenURI(id, { blockTag }),
   ]);
   // Image and traits are both obtained from the same on-chain block snapshot.
   const metadata = JSON.parse(atob(uri.split(",")[1]));
   return {
     id: Number(id),
     owner,
+    burned,
     nextBreedAt: Number(nextBreedAt),
     image: metadata.image,
     ...Object.fromEntries(
@@ -103,7 +109,12 @@ export async function loadLion(id, c, blockTag = "latest") {
 export async function loadCollection(owner, limit = 12) {
   const c = await reader();
   const blockTag = Number(await readProvider.send("eth_blockNumber", []));
-  const supply = Number(await c.totalSupply({ blockTag }));
+  const [supplyValue, mintedValue] = await Promise.all([
+    c.totalSupply({ blockTag }),
+    c.totalMinted({ blockTag }),
+  ]);
+  const supply = Number(supplyValue);
+  const minted = Number(mintedValue);
   const total = owner ? Number(await c.balanceOf(owner, { blockTag })) : 0;
   const lions = [];
   for (let offset = 0; offset < Math.min(limit, total); offset += 12) {
@@ -116,7 +127,7 @@ export async function loadCollection(owner, limit = 12) {
     );
     lions.push(...(await Promise.all(ids.map((id) => loadLion(id, c, blockTag)))));
   }
-  return { lions, total, supply, blockNumber: blockTag };
+  return { lions, total, supply, minted, blockNumber: blockTag };
 }
 
 async function marketReader() {
@@ -168,7 +179,9 @@ async function confirmed(tx, onStatus) {
 
 export async function transact(action, args, onStatus) {
   if (
-    !["mint", "breed", "transfer", "list", "buy", "cancel", "withdraw"].includes(action)
+    !["mint", "breed", "transfer", "list", "buy", "cancel", "withdraw", "burn"].includes(
+      action,
+    )
   )
     throw new Error("不支持的操作。");
   const account = await connect();
@@ -252,6 +265,7 @@ export function friendlyError(error) {
     ParentResting: "亲代还在冷却，请稍后重试。",
     SoldOut: "已达到 10,000 只上限。",
     ERC721NonexistentToken: "未找到该狮子。",
+    NotTokenOwner: "只有 NFT 当前主人可以销毁，授权地址不能代为销毁。",
     InvalidPrice: "挂单价格必须大于 0。",
     NotOwner: "只有 NFT 主人才能挂单。",
     NotListed: "该 NFT 已成交或已撤单，请刷新市场。",

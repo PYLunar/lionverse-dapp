@@ -137,4 +137,19 @@ describe("LionMarketplace", function () {
     );
     assert.equal(await nft.ownerOf(1), alice.address);
   });
+  it("requires cancelling before burning and preserves seller proceeds after a buyer burns", async function () {
+    await list();
+    await assert.rejects(nft.burn(1), /NotTokenOwner/);
+    await (await market.cancel(1)).wait();
+    await (await nft.burn(1)).wait();
+    await assert.rejects(market.list(1, price), /ERC721NonexistentToken/);
+    await list(2);
+    await (await market.connect(bob).buy(2, { value: price })).wait();
+    await assert.rejects(nft.burn(2), /NotTokenOwner/);
+    await (await nft.connect(bob).burn(2)).wait();
+    assert.equal(await market.proceeds(alice.address), price);
+    await (await market.withdraw()).wait();
+    assert.equal(await market.proceeds(alice.address), 0n);
+    assert.equal(await nft.isBurned(2), true);
+  });
 });

@@ -152,4 +152,81 @@ describe("Simple Lionverse", function () {
       /ERC721InvalidReceiver/,
     );
   });
+  it("allows only the current owner to burn, clears ownership and emits the standard zero-address transfer", async function () {
+    await mint();
+    const before = Array.from(await nft.getLion(1));
+    await (await nft.approve(bob.address, 1)).wait();
+    await assert.rejects(nft.connect(bob).burn(1), /NotTokenOwner/);
+    await (await nft.setApprovalForAll(bob.address, true)).wait();
+    await assert.rejects(nft.connect(bob).burn(1), /NotTokenOwner/);
+    const receipt = await (await nft.burn(1)).wait();
+    const events = receipt.logs.map((log) => {
+      try {
+        return nft.interface.parseLog(log);
+      } catch {
+        return null;
+      }
+    });
+    const transfer = events.find((event) => event?.name === "Transfer");
+    assert.equal(transfer.args.from, alice.address);
+    assert.equal(transfer.args.to, ethers.ZeroAddress);
+    assert.equal(events.find((event) => event?.name === "LionBurned").args.tokenId, 1n);
+    assert.equal(await nft.isBurned(1), true);
+    assert.equal(await nft.balanceOf(alice.address), 0n);
+    assert.equal(await nft.totalSupply(), 0n);
+    assert.equal(await nft.totalMinted(), 1n);
+    assert.deepEqual(Array.from(await nft.getLion(1)), before);
+    await assert.rejects(nft.ownerOf(1), /ERC721NonexistentToken/);
+    await assert.rejects(nft.getApproved(1), /ERC721NonexistentToken/);
+    await assert.rejects(nft.tokenURI(1), /ERC721NonexistentToken/);
+    await assert.rejects(nft.burn(1), /ERC721NonexistentToken/);
+    await assert.rejects(nft.isBurned(999), /ERC721NonexistentToken/);
+    await assert.rejects(nft.getLion(0), /ERC721NonexistentToken/);
+  });
+  it("never reuses burned IDs, and burning does not reopen the lifetime supply cap", async function () {
+    await mint();
+    await mint();
+    await (await nft.burn(1)).wait();
+    await mint();
+    assert.equal(await nft.ownerOf(2), alice.address);
+    assert.equal(await nft.ownerOf(3), alice.address);
+    assert.equal(await nft.totalSupply(), 2n);
+    assert.equal(await nft.totalMinted(), 3n);
+    assert.deepEqual(
+      new Set([await nft.tokenByIndex(0), await nft.tokenByIndex(1)]),
+      new Set([2n, 3n]),
+    );
+    const boundary = await (
+      await ethers.getContractFactory("LionSupplyHarness")
+    ).deploy();
+    await boundary.waitForDeployment();
+    await (await boundary.setMintedForTest(9999)).wait();
+    await (await boundary.mint()).wait();
+    await (await boundary.burn(10000)).wait();
+    assert.equal(await boundary.totalSupply(), 0n);
+    assert.equal(await boundary.totalMinted(), 10000n);
+    await assert.rejects(boundary.mint(), /SoldOut/);
+  });
+  it("retains archived traits, image and ancestry when a parent is burned", async function () {
+    await mint();
+    await mint();
+    await rest();
+    await (await nft.breed(1, 2)).wait();
+    const parent = Array.from(await nft.getLion(1));
+    await (await nft.burn(1)).wait();
+    assert.equal((await nft.getLion(3)).parentA, 1n);
+    assert.deepEqual(Array.from(await nft.getLion(1)), parent);
+    const metadata = JSON.parse(
+      Buffer.from((await nft.historicalTokenURI(1)).split(",")[1], "base64").toString(),
+    );
+    assert.equal(metadata.burned, true);
+    assert.equal(metadata.name, "Lion #1");
+    assert(metadata.image.startsWith("data:image/svg+xml;base64,"));
+    await assert.rejects(nft.breed(1, 2), /ERC721NonexistentToken/);
+    await assert.rejects(
+      nft.transferFrom(alice.address, bob.address, 1),
+      /ERC721NonexistentToken/,
+    );
+    await assert.rejects(nft.historicalTokenURI(999), /ERC721NonexistentToken/);
+  });
 });

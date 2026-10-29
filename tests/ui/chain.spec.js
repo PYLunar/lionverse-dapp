@@ -150,6 +150,61 @@ test("local EVM: mint, reject, inherit, transfer, change account and inspect par
     await expect(
       page.getByRole("button", { name: "领取成交款", exact: true }),
     ).toBeDisabled();
+    await page.evaluate((next) => window.__setAccount(next), accounts[0]);
+    await page.locator(".wallet-button").click();
+    await page.getByRole("button", { name: "我的狮群", exact: true }).click();
+    await expect(page.locator(".lion-card")).toHaveCount(3);
+    await page
+      .locator(".lion-card")
+      .filter({ hasText: "狮子 #" + ids[0] })
+      .click();
+    await dialog.getByRole("button", { name: "销毁 NFT", exact: true }).click();
+    await expect(
+      dialog.getByRole("button", { name: "确认永久销毁", exact: true }),
+    ).toBeDisabled();
+    await dialog.locator("#burn-confirm-id").fill("wrong");
+    await expect(
+      dialog.getByRole("button", { name: "确认永久销毁", exact: true }),
+    ).toBeDisabled();
+    await page.getByLabel("关闭弹窗").click();
+    await expect(dialog.getByRole("heading")).toHaveText("狮子 #" + ids[0]);
+    await dialog.getByRole("button", { name: "销毁 NFT", exact: true }).click();
+    await dialog.locator("#burn-confirm-id").fill(ids[0]);
+    await page.screenshot({ path: "tmp/previews/burn-confirm.png", fullPage: true });
+    await page.evaluate(() => {
+      window.__reject = true;
+    });
+    await dialog.getByRole("button", { name: "确认永久销毁", exact: true }).click();
+    await expect(dialog.getByRole("alert")).toContainText("取消了钱包操作");
+    await page.evaluate(() => {
+      window.__reject = false;
+    });
+    await dialog.getByRole("button", { name: "确认永久销毁", exact: true }).click();
+    await expect(dialog).toHaveCount(0, { timeout: 20000 });
+    await expect(page.getByRole("status")).toContainText("永久销毁");
+    await expect(page.locator(".lion-card")).toHaveCount(2);
+    await page
+      .locator(".lion-card")
+      .filter({ hasText: "狮子 #" + childId })
+      .click();
+    await dialog
+      .locator(".parents")
+      .getByRole("button", { name: "#" + ids[0], exact: true })
+      .click();
+    await expect(dialog).toContainText("已销毁 · 历史记录");
+    await page.screenshot({ path: "tmp/previews/burn-history.png", fullPage: true });
+    await expect(
+      dialog.getByRole("button", { name: "销毁 NFT", exact: true }),
+    ).toHaveCount(0);
+    await expect(
+      dialog.getByRole("button", { name: "上架出售", exact: true }),
+    ).toHaveCount(0);
+    await page.getByLabel("关闭弹窗").click();
+    await page.getByRole("button", { name: "铸造", exact: true }).click();
+    await expect(page.locator(".footnote")).toContainText("3 / 10,000");
+    await expect(page.locator(".footnote")).toContainText("当前存量：2");
+    await page.getByRole("button", { name: "铸造一只狮子", exact: true }).click();
+    await expect(dialog.getByRole("heading")).toHaveText("狮子 #4", { timeout: 20000 });
     expect(errors).toEqual([]);
   } finally {
     rpc.destroy();

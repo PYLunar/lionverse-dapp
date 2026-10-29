@@ -25,6 +25,8 @@ contract LionNFT is ERC721Enumerable, ReentrancyGuard {
     }
     uint256 public constant MAX_SUPPLY = 10000;
     uint256 public constant BREED_COOLDOWN = 5 minutes;
+    /// @notice Lifetime mints, including burned tokens. IDs are never reused.
+    uint256 public totalMinted;
     mapping(uint256 => Lion) private _lions;
     mapping(uint256 => uint256) public nextBreedAt;
     event LionBorn(
@@ -33,6 +35,8 @@ contract LionNFT is ERC721Enumerable, ReentrancyGuard {
         uint256 parentA,
         uint256 parentB
     );
+    event LionBurned(address indexed owner, uint256 indexed tokenId);
+    error NotTokenOwner();
     error SoldOut();
     error SameParent();
     error NotParentOwner();
@@ -42,6 +46,23 @@ contract LionNFT is ERC721Enumerable, ReentrancyGuard {
 
     function mint() external nonReentrant returns (uint256) {
         return _create(0, 0);
+    }
+
+    /// @notice Only the owner may permanently destroy a token, not an operator.
+    /// @dev Historical traits/parents remain readable for descendants.
+    function burn(uint256 tokenId) external nonReentrant {
+        if (ownerOf(tokenId) != msg.sender) revert NotTokenOwner();
+        _burn(tokenId);
+        emit LionBurned(msg.sender, tokenId);
+    }
+
+    function isBurned(uint256 tokenId) external view returns (bool) {
+        _requireKnown(tokenId);
+        return _ownerOf(tokenId) == address(0);
+    }
+
+    function _requireKnown(uint256 tokenId) private view {
+        if (tokenId == 0 || tokenId > totalMinted) revert ERC721NonexistentToken(tokenId);
     }
 
     function breed(
@@ -60,7 +81,7 @@ contract LionNFT is ERC721Enumerable, ReentrancyGuard {
     }
 
     function getLion(uint256 tokenId) external view returns (Lion memory) {
-        _requireOwned(tokenId);
+        _requireKnown(tokenId);
         return _lions[tokenId];
     }
 
@@ -69,8 +90,9 @@ contract LionNFT is ERC721Enumerable, ReentrancyGuard {
     }
 
     function _create(uint256 parentA, uint256 parentB) private returns (uint256 tokenId) {
-        tokenId = totalSupply() + 1;
+        tokenId = totalMinted + 1;
         if (tokenId > MAX_SUPPLY) revert SoldOut();
+        totalMinted = tokenId;
         uint256 seed = uint256(
             keccak256(
                 abi.encode(
@@ -108,6 +130,16 @@ contract LionNFT is ERC721Enumerable, ReentrancyGuard {
 
     function tokenURI(uint256 tokenId) public view override returns (string memory) {
         _requireOwned(tokenId);
+        return _metadata(tokenId);
+    }
+
+    /// @notice Archived metadata for known tokens, including destroyed ancestors.
+    function historicalTokenURI(uint256 tokenId) external view returns (string memory) {
+        _requireKnown(tokenId);
+        return _metadata(tokenId);
+    }
+
+    function _metadata(uint256 tokenId) private view returns (string memory) {
         Lion memory l = _lions[tokenId];
         return
             string.concat(
@@ -121,7 +153,9 @@ contract LionNFT is ERC721Enumerable, ReentrancyGuard {
                             Base64.encode(
                                 bytes(LionArt.render(l.species, l.fur, l.mane, l.eyes))
                             ),
-                            '","attributes":[',
+                            '","burned":',
+                            _ownerOf(tokenId) == address(0) ? 'true' : 'false',
+                            ',"attributes":[',
                             _attribute('Species', l.species),
                             ',',
                             _attribute('Fur', l.fur),
