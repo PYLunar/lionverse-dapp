@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { PawPrint, Wallet, ArrowUpRight } from "lucide-react";
 import Modal from "./components/Modal.jsx";
 import MarketPage from "./components/MarketPage.jsx";
+import SpeciesStory from "./components/SpeciesStory.jsx";
 import { shortAddress, rarityOf, traitLabels } from "./domain/catalog.js";
 import {
   ADDRESS,
@@ -322,6 +323,10 @@ export default function App() {
               {loading ? "读取中…" : `${collection.minted} / 10,000`}； 当前存量：
               {loading ? "读取中…" : collection.supply}。
             </p>
+            <section className="story-grid" aria-label="炫彩狮的故事">
+              <SpeciesStory species={5} />
+              <SpeciesStory species={4} />
+            </section>
           </>
         )}
         {page === "market" && (
@@ -510,6 +515,7 @@ export default function App() {
                   </div>
                 ))}
               </dl>
+              <SpeciesStory species={detail.species} />
               <p className="owner">
                 {detail.burned ? (
                   "已销毁 · 历史记录"
