@@ -60,7 +60,7 @@ export default function Modal({ children, close, title, busy }) {
       >
         <button
           className="icon-button modal-close"
-          aria-label="关闭弹窗"
+          aria-label="Close dialog"
           onClick={close}
           disabled={busy}
         >

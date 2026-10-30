@@ -3,13 +3,8 @@
   src: url("/fonts/dm-sans-0.woff2") format("woff2");
   font-display: swap;
 }
-@font-face {
-  font-family: "Noto Sans SC";
-  src: url("/fonts/noto-sans-sc-0.woff2") format("woff2");
-  font-display: swap;
-}
 :root {
-  font-family: "DM Sans", "Noto Sans SC", system-ui, sans-serif;
+  font-family: "DM Sans", system-ui, sans-serif;
   color: #223b30;
   background: #f7f7f1;
   font-synthesis: none;
@@ -89,6 +84,16 @@ nav button[aria-current="page"] {
   background: #e9efdf;
   color: #214b36;
   font-weight: 700;
+}
+@media (min-width: 701px) and (max-width: 900px) {
+  header {
+    flex-wrap: wrap;
+  }
+  nav {
+    order: 3;
+    width: 100%;
+    justify-content: center;
+  }
 }
 .wallet-button {
   display: flex;
@@ -544,6 +549,7 @@ form {
     font-size: 38px;
   }
   .probabilities {
+    grid-template-columns: 1fr;
     gap: 9px;
   }
   .probabilities article {

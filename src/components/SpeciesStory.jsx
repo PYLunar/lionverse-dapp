@@ -6,7 +6,7 @@ export default function SpeciesStory({ species }) {
   return (
     <section
       className={`species-story species-story-${species}`}
-      aria-label={`${SPECIES[species]}背景故事`}
+      aria-label={`${SPECIES[species]} backstory`}
     >
       <p className="story-species">{SPECIES[species]}</p>
       <h3>{story.title}</h3>

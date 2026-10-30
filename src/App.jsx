@@ -20,10 +20,10 @@ import {
 } from "./services/blockchain.js";
 
 const PAGES = [
-  ["mint", "铸造"],
-  ["collection", "我的狮群"],
-  ["breed", "繁育"],
-  ["market", "交易市场"],
+  ["mint", "Mint"],
+  ["collection", "My Pride"],
+  ["breed", "Breed"],
+  ["market", "Marketplace"],
 ];
 
 export default function App() {
@@ -76,7 +76,7 @@ export default function App() {
     function networkChanged(chain) {
       reset();
       if (Number(chain) !== CHAIN_ID)
-        setNotice({ error: true, text: `请连接 ${NETWORK}。` });
+        setNotice({ error: true, text: `Please connect to ${NETWORK}.` });
     }
     ethereum.on("accountsChanged", reset);
     ethereum.on("chainChanged", networkChanged);
@@ -133,16 +133,16 @@ export default function App() {
       setNotice({
         text:
           {
-            transfer: "转赠已在链上确认。",
-            list: "NFT 已上架；成交后请到市场领取款项。",
-            buy: "购买成功，NFT 已转入你的钱包。",
-            cancel: "挂单已撤销，NFT 已回到你的钱包。",
-            withdraw: "成交款已领取到钱包。",
-            burn: "NFT 已永久销毁，历史属性与父母记录仍可查询。",
+            transfer: "Transfer confirmed on-chain.",
+            list: "NFT listed. Withdraw your proceeds from the marketplace after a sale.",
+            buy: "Purchase complete. The NFT is now in your wallet.",
+            cancel: "Listing canceled. The NFT is back in your wallet.",
+            withdraw: "Sale proceeds withdrawn to your wallet.",
+            burn: "NFT permanently burned. Historical traits and parent records remain available.",
           }[action] ||
           (result.lion
-            ? "新狮子已在链上诞生！"
-            : "铸造已确认，详情暂不可用，请刷新收藏。"),
+            ? "A new lion is born on-chain!"
+            : "Mint confirmed. Details are temporarily unavailable; please refresh your collection."),
       });
       const scope = identity.current;
       const [accounts, chain] = await Promise.allSettled([
@@ -207,9 +207,9 @@ export default function App() {
     <div className="app-shell">
       <header>
         <a className="brand" href="#mint" onClick={() => setPage("mint")}>
-          <PawPrint size={25} /> 狮屿 <small>LIONVERSE</small>
+          <PawPrint size={25} /> Lionverse
         </a>
-        <nav aria-label="主导航">
+        <nav aria-label="Main navigation">
           {PAGES.map(([id, label]) => (
             <button
               key={id}
@@ -225,14 +225,16 @@ export default function App() {
         </nav>
         <button className="wallet-button" onClick={connectWallet} disabled={busy}>
           <Wallet size={16} />
-          {account ? shortAddress(account) : "连接钱包"}
+          {account ? shortAddress(account) : "Connect Wallet"}
         </button>
       </header>
       <main>
         <div className="network-line">
           <span className="network-dot" />
           {NETWORK}
-          <span>{CONFIGURED ? `合约 ${shortAddress(ADDRESS)}` : "尚未部署合约"}</span>
+          <span>
+            {CONFIGURED ? `Contract ${shortAddress(ADDRESS)}` : "Contract not deployed"}
+          </span>
         </div>
         {notice && !detail && !burnTarget && (
           <div
@@ -243,10 +245,10 @@ export default function App() {
             {hash &&
               (EXPLORER ? (
                 <a href={`${EXPLORER}/tx/${hash}`} target="_blank" rel="noreferrer">
-                  查看交易 ↗
+                  View transaction ↗
                 </a>
               ) : (
-                <small>交易：{hash}</small>
+                <small>Transaction: {hash}</small>
               ))}
           </div>
         )}
@@ -254,12 +256,14 @@ export default function App() {
           <div role="alert" className="notice error">
             {loadError}
             <button onClick={() => setRefresh((n) => n + 1)} disabled={loading}>
-              重试
+              Retry
             </button>
           </div>
         )}
         {!CONFIGURED && (
-          <p className="notice">请按 README 部署简化版合约，然后启动前端。</p>
+          <p className="notice">
+            Deploy the contracts using the README, then start the frontend.
+          </p>
         )}
         {page === "mint" && (
           <>
@@ -267,21 +271,24 @@ export default function App() {
               <div>
                 <p className="eyebrow">FOUR TRAITS. ONE LION.</p>
                 <h1>
-                  遇见你的
+                  Meet your
                   <br />
-                  链上狮子。
+                  on-chain lion.
                 </h1>
                 <p>
-                  四项外观，一份属于钱包的收藏。铸造、繁育或转赠，每一步都记录在链上。
+                  Four traits. A collection owned by your wallet. Mint, breed or transfer
+                  a lion, with every step recorded on-chain.
                 </p>
                 <button
                   className="primary"
                   disabled={busy || !CONFIGURED}
                   onClick={() => perform("mint")}
                 >
-                  {busy ? "处理中…" : account ? "铸造一只狮子" : "连接钱包并铸造"}
+                  {busy ? "Processing…" : account ? "Mint a Lion" : "Connect & Mint"}
                 </button>
-                <small>铸造免费 · 仅需网络 Gas · 初代与子代冷却 5 分钟</small>
+                <small>
+                  Free mint · Network gas only · 5-minute cooldown for every new lion
+                </small>
               </div>
               <div className="hero-art" aria-hidden="true">
                 <svg viewBox="0 0 360 340">
@@ -301,14 +308,14 @@ export default function App() {
                     strokeWidth="2"
                   />
                 </svg>
-                <p>外观示例 · 实际外观由四项属性决定</p>
+                <p>Preview · Each lion's appearance is defined by four traits</p>
               </div>
             </section>
-            <section className="probabilities" aria-label="初代铸造概率">
+            <section className="probabilities" aria-label="Founder mint probabilities">
               {[
-                ["60%", "普通品种", "原野 / 雪域 / 黄金 / 钻石"],
-                ["30%", "黑白炫彩", "黑白渐变鬃毛"],
-                ["10%", "普通炫彩", "彩虹渐变鬃毛"],
+                ["60%", "Classic", "Savanna / Snow / Golden / Diamond"],
+                ["30%", "Monochrome", "Black-and-white gradient mane"],
+                ["10%", "Rainbow", "Rainbow gradient mane"],
               ].map(([rate, name, text]) => (
                 <article key={name}>
                   <strong>{rate}</strong>
@@ -318,12 +325,12 @@ export default function App() {
               ))}
             </section>
             <p className="footnote">
-              以上为每次初代铸造概率，没有保底；繁育属性各有 50%
-              概率继承任一亲代。累计铸造：
-              {loading ? "读取中…" : `${collection.minted} / 10,000`}； 当前存量：
-              {loading ? "读取中…" : collection.supply}。
+              These odds apply to each founder mint, with no guaranteed rare drop. Each
+              bred trait has a 50% chance of coming from either parent. Total minted:{" "}
+              {loading ? "Loading…" : `${collection.minted} / 10,000`}. Active supply:{" "}
+              {loading ? "Loading…" : collection.supply}.
             </p>
-            <section className="story-grid" aria-label="炫彩狮的故事">
+            <section className="story-grid" aria-label="Special lion stories">
               <SpeciesStory species={5} />
               <SpeciesStory species={4} />
             </section>
@@ -351,35 +358,37 @@ export default function App() {
                     ? "CREATE THE NEXT GENERATION"
                     : "OWNED BY YOUR WALLET"}
                 </p>
-                <h1>{page === "breed" ? "新一代，从这里开始。" : "我的狮群"}</h1>
+                <h1>
+                  {page === "breed" ? "The next generation starts here." : "My Pride"}
+                </h1>
               </div>
               <button disabled={busy || loading} onClick={() => setRefresh((n) => n + 1)}>
-                刷新收藏
+                Refresh collection
               </button>
             </div>
             {!account ? (
               <div className="empty">
                 <PawPrint size={40} />
-                <h2>连接钱包，查看你的狮子</h2>
-                <p>收藏来自区块链，跟随钱包地址。</p>
+                <h2>Connect your wallet to see your lions</h2>
+                <p>Your collection is stored on-chain and follows your wallet address.</p>
                 <button className="primary" onClick={connectWallet} disabled={busy}>
-                  连接钱包
+                  Connect Wallet
                 </button>
               </div>
             ) : (
               <>
                 {page === "breed" && (
                   <section className="breed-panel">
-                    <h2>选择两只亲代</h2>
+                    <h2>Choose two parents</h2>
                     <p>
-                      每项外观各有 50%
-                      概率继承任一亲代，无隐藏基因或变异。代数为双亲较高代数 +1，冷却 5
-                      分钟。
+                      Each trait has a 50% chance of coming from either parent. There are
+                      no hidden genes or mutations. The child's generation is the higher
+                      parent generation + 1. Breeding has a 5-minute cooldown.
                     </p>
                     <div className="parent-selectors">
                       {[
-                        ["选择亲代 A", parentA, setParentA],
-                        ["选择亲代 B", parentB, setParentB],
+                        ["Select parent A", parentA, setParentA],
+                        ["Select parent B", parentB, setParentB],
                       ].map(([label, value, setter]) => (
                         <label key={label}>
                           {label}
@@ -389,7 +398,7 @@ export default function App() {
                             disabled={busy || loading}
                             onChange={(event) => setter(event.target.value)}
                           >
-                            <option value="">请选择</option>
+                            <option value="">Choose a lion</option>
                             {collection.lions.map((lion) => (
                               <option value={lion.id} key={lion.id}>
                                 #{lion.id} · {traitLabels(lion)[0][1]} · Gen{" "}
@@ -405,22 +414,26 @@ export default function App() {
                       disabled={busy || loading || !a || !b || a.id === b.id || wait > 0}
                       onClick={() => perform("breed", [a.id, b.id])}
                     >
-                      {busy ? "处理中…" : wait ? `冷却中 · ${wait} 秒` : "繁育新狮子"}
+                      {busy
+                        ? "Processing…"
+                        : wait
+                          ? `Resting · ${wait}s`
+                          : "Breed a Lion"}
                     </button>
                     {a && b && a.id === b.id && (
-                      <p role="alert">请选择两只不同的狮子。</p>
+                      <p role="alert">Please choose two different lions.</p>
                     )}
                   </section>
                 )}
                 <p className="collection-count">
-                  已加载 {collection.lions.length} / {collection.total} 只
-                  {loading && " · 读取中…"}
+                  Loaded {collection.lions.length} / {collection.total} lions
+                  {loading && " · Loading…"}
                 </p>
                 {!loading && !loadError && collection.total === 0 && (
                   <div className="empty">
-                    <h2>还没有狮子</h2>
-                    <p>铸造你的第一只 NFT，之后可以转赠或繁育。</p>
-                    <button onClick={() => setPage("mint")}>去铸造</button>
+                    <h2>No lions yet</h2>
+                    <p>Mint your first NFT, then transfer it or breed a new lion.</p>
+                    <button onClick={() => setPage("mint")}>Start minting</button>
                   </div>
                 )}
                 <div className="lion-grid">
@@ -440,11 +453,11 @@ export default function App() {
                         <span className="badge">{rarityOf(lion)}</span>
                         <img
                           src={lion.image}
-                          alt={`狮子 #${lion.id}，${traitLabels(lion)[0][1]}`}
+                          alt={`Lion #${lion.id}, ${traitLabels(lion)[0][1]}`}
                         />
                       </div>
                       <div className="card-info">
-                        <strong>狮子 #{lion.id}</strong>
+                        <strong>Lion #{lion.id}</strong>
                         <span>Gen {lion.generation}</span>
                         <p>
                           {traitLabels(lion)[0][1]} <ArrowUpRight size={17} />
@@ -459,7 +472,7 @@ export default function App() {
                     disabled={busy || loading}
                     onClick={() => setLimit((n) => n + 12)}
                   >
-                    加载更多狮子（繁育可选）
+                    Load more lions for breeding
                   </button>
                 )}
               </>
@@ -468,23 +481,23 @@ export default function App() {
         )}
       </main>
       <footer>
-        <span>LIONVERSE · 课程测试网项目</span>
+        <span>LIONVERSE · Testnet Coursework Project</span>
         {EXPLORER && CONFIGURED && (
           <a href={`${EXPLORER}/address/${ADDRESS}`} target="_blank" rel="noreferrer">
-            查看合约 ↗
+            View contract ↗
           </a>
         )}
         <span>React · Ethers.js · ERC-721</span>
       </footer>
       {detail && (
         <Modal
-          title={`狮子 #${detail.id} 详情`}
+          title={`Lion #${detail.id} details`}
           busy={busy}
           close={() => setDetail(null)}
         >
           <div className="detail-layout">
             <div className="detail-art">
-              <img src={detail.image} alt={`狮子 #${detail.id}`} />
+              <img src={detail.image} alt={`Lion #${detail.id}`} />
             </div>
             <div className="detail-content">
               {notice && (
@@ -496,17 +509,17 @@ export default function App() {
                   {hash &&
                     (EXPLORER ? (
                       <a href={`${EXPLORER}/tx/${hash}`} target="_blank" rel="noreferrer">
-                        查看交易 ↗
+                        View transaction ↗
                       </a>
                     ) : (
-                      <small>交易：{hash}</small>
+                      <small>Transaction: {hash}</small>
                     ))}
                 </div>
               )}
               <p className="eyebrow">
                 {rarityOf(detail)} · GEN {detail.generation}
               </p>
-              <h2>狮子 #{detail.id}</h2>
+              <h2>Lion #{detail.id}</h2>
               <dl>
                 {traitLabels(detail).map(([label, value]) => (
                   <div key={label}>
@@ -518,19 +531,19 @@ export default function App() {
               <SpeciesStory species={detail.species} />
               <p className="owner">
                 {detail.burned ? (
-                  "已销毁 · 历史记录"
+                  "Burned · Historical record"
                 ) : (
                   <>
-                    {detail.listing ? "卖家：" : "主人："}
+                    {detail.listing ? "Seller: " : "Owner: "}
                     <span title={detail.listing?.seller || detail.owner}>
                       {shortAddress(detail.listing?.seller || detail.owner)}
                     </span>
                   </>
                 )}
               </p>
-              <p>出生：{new Date(detail.bornAt * 1000).toLocaleString()}</p>
+              <p>Born: {new Date(detail.bornAt * 1000).toLocaleString("en-GB")}</p>
               <div className="parents">
-                父母：
+                Parents:{" "}
                 {detail.parentA ? (
                   <>
                     <button disabled={busy} onClick={() => showParent(detail.parentA)}>
@@ -542,18 +555,18 @@ export default function App() {
                     </button>
                   </>
                 ) : (
-                  "初代"
+                  "Founder"
                 )}
               </div>
               <p>
-                繁育状态：
+                Breeding status:{" "}
                 {detail.burned
-                  ? "已销毁，不能繁育"
+                  ? "Burned; cannot breed"
                   : detail.listing
-                    ? "挂单中，请先撤单"
+                    ? "Listed; cancel the listing first"
                     : detail.nextBreedAt * 1000 > now
-                      ? `冷却中 · ${Math.ceil((detail.nextBreedAt * 1000 - now) / 1000)} 秒`
-                      : "可以繁育"}
+                      ? `Resting · ${Math.ceil((detail.nextBreedAt * 1000 - now) / 1000)}s`
+                      : "Ready to breed"}
               </p>
               {EXPLORER && (
                 <a
@@ -561,7 +574,7 @@ export default function App() {
                   target="_blank"
                   rel="noreferrer"
                 >
-                  在 Etherscan 查看 ↗
+                  View on Etherscan ↗
                 </a>
               )}
               {ownDetail && (
@@ -572,7 +585,7 @@ export default function App() {
                       perform("transfer", [recipient, detail.id]);
                     }}
                   >
-                    <label htmlFor="recipient">转赠到钱包地址</label>
+                    <label htmlFor="recipient">Recipient wallet address</label>
                     <input
                       id="recipient"
                       placeholder="0x…"
@@ -582,7 +595,7 @@ export default function App() {
                       required
                     />
                     <button className="primary" disabled={busy || !recipient}>
-                      转赠 NFT
+                      Transfer NFT
                     </button>
                   </form>
                   {MARKET_CONFIGURED && (
@@ -592,27 +605,31 @@ export default function App() {
                         perform("list", [detail.id, salePrice]);
                       }}
                     >
-                      <label htmlFor="sale-price">挂单价格（ETH）</label>
+                      <label htmlFor="sale-price">Listing price (ETH)</label>
                       <input
                         id="sale-price"
                         inputMode="decimal"
-                        placeholder="例如 0.01"
+                        placeholder="e.g. 0.01"
                         value={salePrice}
                         onChange={(event) => setSalePrice(event.target.value)}
                         disabled={busy}
                         required
                       />
                       <p>
-                        上架需要授权和挂单两笔交易。挂单期间 NFT
-                        由市场合约暂存，不能繁育；撤单后返还。
+                        Listing requires approval and listing transactions. The
+                        marketplace holds your NFT while listed, so it cannot breed.
+                        Cancel to return it to your wallet.
                       </p>
                       <button className="primary" disabled={busy || !salePrice}>
-                        上架出售
+                        List for Sale
                       </button>
                     </form>
                   )}
                   <div className="burn-section">
-                    <p>永久销毁会移除 NFT 所有权，不返还 ETH，也不会补回铸造额度。</p>
+                    <p>
+                      Burning permanently removes ownership. It does not refund ETH or
+                      restore minting capacity.
+                    </p>
                     <button
                       className="danger-button"
                       disabled={busy}
@@ -623,14 +640,14 @@ export default function App() {
                         setNotice(null);
                       }}
                     >
-                      销毁 NFT
+                      Burn NFT
                     </button>
                   </div>
                 </>
               )}
               {detail.listing && (
                 <div className="market-offer">
-                  <strong>挂单价：{formatEther(detail.listing.price)} ETH</strong>
+                  <strong>Price: {formatEther(detail.listing.price)} ETH</strong>
                   <button
                     className="primary"
                     disabled={busy}
@@ -646,8 +663,8 @@ export default function App() {
                     }
                   >
                     {detail.listing.seller.toLowerCase() === account.toLowerCase()
-                      ? "撤销挂单"
-                      : "购买 NFT"}
+                      ? "Cancel Listing"
+                      : "Buy NFT"}
                   </button>
                 </div>
               )}
@@ -657,7 +674,7 @@ export default function App() {
       )}
       {burnTarget && (
         <Modal
-          title={`确认销毁狮子 #${burnTarget.id}`}
+          title={`Confirm burning Lion #${burnTarget.id}`}
           busy={busy}
           close={() => {
             setDetail(burnTarget);
@@ -666,9 +683,11 @@ export default function App() {
           }}
         >
           <div className="burn-confirm">
-            <h2>永久销毁狮子 #{burnTarget.id}</h2>
+            <h2>Permanently burn Lion #{burnTarget.id}</h2>
             <p>
-              此操作不可撤销。狮子将从收藏中移除，不能再转赠、交易或繁育。历史属性和父母记录仍保留；没有退款或奖励。
+              This cannot be undone. The lion will leave your collection and can no longer
+              be transferred, traded or bred. Historical traits and parent records remain
+              available. There is no refund or reward.
             </p>
             {notice && (
               <div className="notice error" role={notice.error ? "alert" : "status"}>
@@ -681,7 +700,9 @@ export default function App() {
                 if (burnInput === String(burnTarget.id)) perform("burn", [burnTarget.id]);
               }}
             >
-              <label htmlFor="burn-confirm-id">输入编号 {burnTarget.id} 确认销毁</label>
+              <label htmlFor="burn-confirm-id">
+                Enter ID {burnTarget.id} to confirm burning
+              </label>
               <input
                 id="burn-confirm-id"
                 inputMode="numeric"
@@ -694,7 +715,7 @@ export default function App() {
                 className="danger-button"
                 disabled={busy || burnInput !== String(burnTarget.id)}
               >
-                {busy ? "等待钱包确认…" : "确认永久销毁"}
+                {busy ? "Waiting for wallet confirmation…" : "Confirm Permanent Burn"}
               </button>
             </form>
           </div>

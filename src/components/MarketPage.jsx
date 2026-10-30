@@ -43,47 +43,50 @@ export default function MarketPage({
       <div className="page-heading">
         <div>
           <p className="eyebrow">FIXED PRICE · TEST ETH</p>
-          <h1>狮子交易市场</h1>
+          <h1>Lion Marketplace</h1>
         </div>
         <button disabled={busy || loading} onClick={() => setRetry((n) => n + 1)}>
-          刷新市场
+          Refresh market
         </button>
       </div>
       <p className="footnote">
-        测试 ETH 固定价交易，平台手续费为 0。挂单时 NFT
-        暂存市场合约，成交或撤单后转出。到“我的狮群”打开详情即可上架。
+        Trade at fixed prices in test ETH with no platform fee. The marketplace holds
+        listed NFTs until a sale or cancellation. Open a lion's details in My Pride to
+        list it.
       </p>
       {account ? (
         <div className="market-balance">
           <div>
-            待领取成交款<strong>{formatEther(data.proceeds)} ETH</strong>
+            Available proceeds<strong>{formatEther(data.proceeds)} ETH</strong>
           </div>
           <button
             className="primary"
             disabled={busy || loading || !!error || data.proceeds === "0"}
             onClick={() => onAction("withdraw")}
           >
-            领取成交款
+            Withdraw Proceeds
           </button>
         </div>
       ) : (
         <p>
           <button onClick={onConnect} disabled={busy}>
-            连接钱包进行交易
+            Connect Wallet to Trade
           </button>
         </p>
       )}
-      {!MARKET_CONFIGURED && <p className="notice">请先部署交易市场。</p>}
+      {!MARKET_CONFIGURED && (
+        <p className="notice">Please deploy the marketplace first.</p>
+      )}
       {error && (
         <p role="alert" className="notice error">
           {error}
         </p>
       )}
-      {loading && <p role="status">正在读取链上挂单…</p>}
+      {loading && <p role="status">Loading on-chain listings…</p>}
       {!loading && !error && data.lions.length === 0 && (
         <div className="empty">
-          <h2>暂无挂单</h2>
-          <p>在“我的狮群”中为狮子设置 ETH 价格，上架后会显示在这里。</p>
+          <h2>No listings yet</h2>
+          <p>Set an ETH price for a lion in My Pride. Your listing will appear here.</p>
         </div>
       )}
       <div className="lion-grid">
@@ -101,17 +104,17 @@ export default function MarketPage({
                 >
                   <div className="card-art">
                     <span className="badge">{rarityOf(lion)}</span>
-                    <img src={lion.image} alt={`狮子 #${lion.id}`} />
+                    <img src={lion.image} alt={`Lion #${lion.id}`} />
                   </div>
                   <div className="card-info">
-                    <strong>狮子 #{lion.id}</strong>
+                    <strong>Lion #{lion.id}</strong>
                     <p>{traitLabels(lion)[0][1]}</p>
                   </div>
                 </button>
                 <div className="market-offer">
                   <strong>{formatEther(lion.listing.price)} ETH</strong>
                   <small>
-                    {own ? "你的挂单" : `卖家 ${shortAddress(lion.listing.seller)}`}
+                    {own ? "Your listing" : `Seller ${shortAddress(lion.listing.seller)}`}
                   </small>
                   <button
                     className={own ? "" : "primary"}
@@ -123,7 +126,7 @@ export default function MarketPage({
                       )
                     }
                   >
-                    {own ? "撤销挂单" : "购买 NFT"}
+                    {own ? "Cancel Listing" : "Buy NFT"}
                   </button>
                 </div>
               </article>
@@ -136,7 +139,7 @@ export default function MarketPage({
           disabled={busy}
           onClick={() => setLimit((n) => n + 12)}
         >
-          加载更多挂单
+          Load more listings
         </button>
       )}
     </>

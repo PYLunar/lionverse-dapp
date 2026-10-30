@@ -1,4 +1,4 @@
-# Lionverse / 狮屿 — Coursework Edition
+# Lionverse — Coursework Edition
 
 A small React + Ethers.js + Solidity DApp: mint, collect, breed, transfer, trade and burn lion NFTs.
 
@@ -20,24 +20,24 @@ Block-based randomness is sufficient for an educational testnet demo but is infl
 
 ## Permanent NFT burning
 
-Open an owned lion's detail, choose 销毁 NFT, enter its exact numeric token ID and select 确认永久销毁. The wallet still asks to sign the burn transaction. Closing the confirmation or rejecting the wallet request leaves the NFT intact.
+Open an owned lion's detail, choose Burn NFT, enter its exact numeric token ID and select Confirm Permanent Burn. The wallet still asks to sign the burn transaction. Closing the confirmation or rejecting the wallet request leaves the NFT intact.
 
 Only the current owner can burn; token approvals and operator approvals do not grant that permission. A listed NFT belongs to the market escrow, so the seller must cancel its listing first. Burning provides no refund or reward.
 
 Burned tokens disappear from wallet/global enumeration and cannot be transferred, listed or bred. IDs are never reused. `totalSupply()` is the active count, while `totalMinted()` counts lifetime births; burning does not reopen minting capacity.
 
-For lineage, `getLion()` preserves historical traits and parent IDs. `isBurned()` distinguishes a destroyed known token from one never minted. Standard `ownerOf()` and `tokenURI()` reject burned IDs; `historicalTokenURI()` explicitly returns archived metadata/SVG with a burned flag. A descendant's parent link shows “已销毁 · 历史记录” without actionable ownership controls.
+For lineage, `getLion()` preserves historical traits and parent IDs. `isBurned()` distinguishes a destroyed known token from one never minted. Standard `ownerOf()` and `tokenURI()` reject burned IDs; `historicalTokenURI()` explicitly returns archived metadata/SVG with a burned flag. A descendant's parent link shows “Burned · Historical record” without actionable ownership controls.
 
 This feature requires deploying a new NFT and its matching market; an existing non-upgradeable contract cannot gain burn functionality. Deployments archive the old address record. Old NFTs, listings and seller proceeds are not automatically migrated.
 
 ## NFT market
 
-- Open an owned lion's detail, enter a price in ETH and select 上架出售.
+- Open an owned lion's detail, enter a price in ETH and select List for Sale.
 - Approve only that token, then confirm the listing (normally two wallet transactions). Cancelling the second step leaves the NFT in the wallet; the approval remains and may be revoked or reused.
 - Listing transfers the NFT into LionMarketplace escrow. It is absent from the seller's wallet collection and cannot breed while listed.
 - Buyers pay the exact listed ETH amount plus network gas. The transfer and seller credit occur atomically; a failed NFT transfer rolls the whole purchase back.
 - Only the seller can cancel an active listing. Cancellation returns the NFT.
-- After a sale, the seller opens the market and selects 领取成交款. No platform fee or royalty is deducted.
+- After a sale, the seller opens the market and selects Withdraw Proceeds. No platform fee or royalty is deducted.
 - Sale events record token ID, seller, buyer and price in wei. A normal wallet transfer does not imply a sale.
 
 The market is bound to a single LionNFT contract. Use the listing flow rather than transferring NFTs directly to the market address. Unsolicited safe transfers are rejected; an unsafe ERC-721 transferFrom can still send a token without a listing and there is no admin rescue. The test suite covers permissions, exact payment, repeat buys, receiver rejection, withdrawal failure and withdrawal reentry.
