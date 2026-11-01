@@ -1,144 +1,289 @@
-# Lionverse — Coursework Edition
+# Lionverse NFT DApp
 
-A small React + Ethers.js + Solidity DApp: mint, collect, breed, transfer, trade and burn lion NFTs.
+Lionverse is a COMP7610 coursework application for minting, collecting, breeding, transferring, trading and burning lion NFTs. Ownership, traits, ancestry, listings and seller proceeds are recorded in Solidity smart contracts on Sepolia.
 
-The primary compilation/deployment workflow is now **Remix + MetaMask + Sepolia**. Hardhat is retained for optional local development and automated tests. The running DApp talks directly to the deployed contracts, independently of the editor used to deploy them.
+**[Open the live DApp](https://symphonious-sherbet-47ba97.netlify.app/)** · **[Deployment and transaction evidence](docs/Deployment-Sepolia.md)** · **[Detailed Remix guide](remix/README.md)**
 
-Live DApp: **https://symphonious-sherbet-47ba97.netlify.app/**. The site is publicly accessible and uses the existing Sepolia NFT and market. See [deployment records](docs/Deployment-Sepolia.md) for addresses, confirmed deployment transactions and verification scope.
+The primary deployment workflow is **Remix + MetaMask + Sepolia**. Hardhat is used for automated tests and optional local development. The website communicates with the contracts through Ethers.js; Remix does not need to remain open after deployment.
 
-## Deploy using Remix
+## 1. Use the live application
 
-1. Follow [the complete Remix walkthrough](remix/README.md).
-2. Upload **remix/Lionverse.sol** into a dedicated Remix workspace and use the supplied **remix/remix.config.json** as its workspace configuration. Older Remix versions can use **remix/compiler_config.json**. All Solidity dependencies are included, pinned to OpenZeppelin 5.4.0.
-3. Select Solidity **0.8.28**, optimizer **200** runs, **viaIR**, and **Paris** EVM target using the supplied compiler configuration.
-4. With MetaMask on Sepolia, deploy **LionNFT** first (no constructor arguments), then **LionMarketplace** using the NFT address as its constructor argument. Sign both deployments in MetaMask and save their receipts.
-5. Connect the frontend using the two real deployed addresses:
+No installation, source download or contract deployment is needed to use the hosted website.
+
+1. Open the [live DApp](https://symphonious-sherbet-47ba97.netlify.app/) in a browser with MetaMask installed.
+2. Unlock your own wallet and select **Sepolia**, chain ID **11155111**. Enable test networks in your wallet if Sepolia is hidden.
+3. Have some **Sepolia test ETH** for network gas and, if purchasing, the displayed sale price.
+4. Click **Connect Wallet** and approve the connection in MetaMask.
+5. Use **Mint**, **My Pride**, **Breed** or **Marketplace**. Approve each state-changing transaction and wait for confirmation.
+
+To interact with a teammate, both users open the same URL with their own wallet accounts on Sepolia. They use the shared contracts below. A second computer does not need its own deployment or access to the first computer's local server.
+
+### Current Sepolia deployment
+
+| Contract        | Address                                                                                                                         |
+| --------------- | ------------------------------------------------------------------------------------------------------------------------------- |
+| LionNFT         | [`0x853E3613Be4d66D656bE481A377c314bfe40e97e`](https://sepolia.etherscan.io/address/0x853E3613Be4d66D656bE481A377c314bfe40e97e) |
+| LionMarketplace | [`0x2af1853622a2FDcEdA675850D4a8385591718154`](https://sepolia.etherscan.io/address/0x2af1853622a2FDcEdA675850D4a8385591718154) |
+
+Confirmed deployment and operation receipts are linked in [the deployment record](docs/Deployment-Sepolia.md).
+
+## 2. Features and rules
+
+| Feature      | Behaviour                                                                            |
+| ------------ | ------------------------------------------------------------------------------------ |
+| Mint         | Create a founder NFT. There is no application mint fee; network gas still applies.   |
+| My Pride     | View owned NFTs, artwork, traits, generation and ancestry.                           |
+| Breed        | Create a child from two different, owned lions whose cooldowns have finished.        |
+| Transfer     | Send an owned NFT to another wallet; the recipient connects that account to view it. |
+| List and buy | Sell an NFT at a fixed ETH price through marketplace escrow.                         |
+| Cancel       | The seller cancels an active listing and receives the NFT back.                      |
+| Withdraw     | The seller separately withdraws proceeds credited by successful purchases.           |
+| Burn         | The current owner permanently destroys an NFT after an exact-token-ID confirmation.  |
+
+### Traits and breeding
+
+Each lion has four visible traits: **species, fur, mane and eyes**. It also stores generation, creation time and two parent IDs. Founder species probabilities are:
+
+- **60% Classic:** Savanna, Snow, Golden and Diamond combined.
+- **30% Monochrome:** a black-and-white gradient appearance.
+- **10% Rainbow:** a rainbow gradient appearance.
+
+Within the Classic group, the relative species weights are 6200 / 2400 / 900 / 350. Fur has six values, mane three and eyes four. There are **432 encoded combinations**; rendering rules can make some look similar. Matching artwork does not make two token IDs the same NFT.
+
+For breeding, each trait independently inherits either parent's value with a 50% chance. There are no hidden genes or mutations. The child's generation is `max(parent generations) + 1`. Newly created lions and parents used in breeding have a **five-minute cooldown**. Founder probabilities do not apply to inherited offspring.
+
+The lifetime supply limit is **10,000 births**, including offspring and burned NFTs. Probabilities do not guarantee exact proportions in a small sample.
+
+### Trading and burning
+
+Listing normally requires **two wallet transactions**: approval of that NFT, followed by listing. Once listed, the NFT belongs to marketplace escrow and leaves the seller's wallet collection. It cannot breed or be burned by the seller while listed.
+
+Buyers pay the exact listed ETH price plus gas. The NFT transfer and seller credit happen atomically. Sellers use **Withdraw Proceeds** to receive credited ETH. There is no platform fee or royalty deduction, and sellers cannot buy their own listings.
+
+Only the current owner can burn an NFT; approval alone does not grant burn permission. Burning provides no refund and cannot be undone. IDs are never reused, and burning does not restore minting capacity. `totalSupply()` counts active NFTs; `totalMinted()` counts lifetime births.
+
+On-chain traits, ancestry and SVG artwork remain readable through `getLion()` and `historicalTokenURI()` after burning. Standard `ownerOf()` and `tokenURI()` reject burned IDs. Background stories are frontend content rather than additional on-chain metadata.
+
+## 3. Architecture
+
+![Lionverse system architecture](docs/system-architecture.png)
+
+- **React + Vite:** the four-page web interface, hosted on Netlify for the live demo.
+- **Ethers.js:** contract reads through RPC and transaction calls through the wallet.
+- **MetaMask:** account selection, network switching and user-approved signing.
+- **LionNFT:** ERC-721 ownership, enumeration, minting, breeding, burning and metadata.
+- **LionTraits / LionArt:** trait selection and inheritance, plus on-chain SVG rendering.
+- **LionMarketplace:** listings, escrow, purchases, cancellations and withdrawals.
+- **Remix:** compilation and Sepolia deployment, independent of runtime access.
+
+There is no application database. Users share state by using the same chain and contract addresses.
+
+## 4. Run the source against the existing Sepolia contracts
+
+### Requirements
+
+- **Node.js 24 LTS** with npm. Node.js 22.12 or newer in the 22.x line is also supported by the toolchain.
+- Git to clone the repository.
+- Internet access to the configured Sepolia RPC.
+- A browser with MetaMask for transactions.
+
+Python is not required to run, compile or test the DApp. The optional font-maintenance script is separate from the normal workflow.
+
+### Clone and install
+
+Examples use **Windows PowerShell** from the repository root.
 
 ```powershell
+git clone https://github.com/PYLunar/lionverse-dapp.git
+cd lionverse-dapp
 npm ci
-npm run remix:connect -- --nft YOUR_NFT_ADDRESS --market YOUR_MARKET_ADDRESS
-npm run dev -- --host 127.0.0.1
 ```
 
-The connect command checks Sepolia chain ID, contract code, expected NFT settings and the marketplace's NFT binding before updating .env.local. It sends no transactions. No private key or Hardhat deployment is required for this workflow. The checked-in frontend ABIs already match the supplied bundle. To regenerate and validate the bundle after changes, run `npm run remix:prepare`.
-
-Both contracts have now been deployed with Remix and MetaMask on Sepolia. Their confirmed transaction links are recorded in [deployment records](docs/Deployment-Sepolia.md); include those records and actual operation evidence in the final report.
-
-## Data and rules
-
-Each lion has **four visible traits**: species, fur, mane, eyes. It also stores generation, birth time, and two parent IDs. Ownership comes from ERC-721. Images (SVG) and metadata are on-chain.
-
-Founder mint probabilities:
-
-- Natural species combined: **60%**
-- Monochrome prismatic: **30%**
-- Rainbow prismatic: **10%**
-
-Within natural species, field / snow / gold / diamond retain relative weights 6200 / 2400 / 900 / 350. Fur has 6 choices, mane 3, eyes 4. Rarity is a UI label derived from species, not an extra stored random trait.
-
-For breeding, each of the four traits independently inherits one parent's visible value with a 50% chance. There are no hidden genes or mutations. The child generation is max(parent generations) + 1. Both parents must be different and owned by the caller. Parents and newborns rest for 5 minutes. Minting is free except network gas; the lifetime cap of 10,000 includes offspring and burned tokens.
-
-Block-based randomness is sufficient for an educational testnet demo but is influenceable and unsuitable for paid draws. Minting remains free. The separate market supports fixed-price trading.
-
-## Permanent NFT burning
-
-Open an owned lion's detail, choose Burn NFT, enter its exact numeric token ID and select Confirm Permanent Burn. The wallet still asks to sign the burn transaction. Closing the confirmation or rejecting the wallet request leaves the NFT intact.
-
-Only the current owner can burn; token approvals and operator approvals do not grant that permission. A listed NFT belongs to the market escrow, so the seller must cancel its listing first. Burning provides no refund or reward.
-
-Burned tokens disappear from wallet/global enumeration and cannot be transferred, listed or bred. IDs are never reused. `totalSupply()` is the active count, while `totalMinted()` counts lifetime births; burning does not reopen minting capacity.
-
-For lineage, `getLion()` preserves historical traits and parent IDs. `isBurned()` distinguishes a destroyed known token from one never minted. Standard `ownerOf()` and `tokenURI()` reject burned IDs; `historicalTokenURI()` explicitly returns archived metadata/SVG with a burned flag. A descendant's parent link shows “Burned · Historical record” without actionable ownership controls.
-
-This feature requires deploying a new NFT and its matching market; an existing non-upgradeable contract cannot gain burn functionality. Deployments archive the old address record. Old NFTs, listings and seller proceeds are not automatically migrated.
-
-## NFT market
-
-- Open an owned lion's detail, enter a price in ETH and select List for Sale.
-- Approve only that token, then confirm the listing (normally two wallet transactions). Cancelling the second step leaves the NFT in the wallet; the approval remains and may be revoked or reused.
-- Listing transfers the NFT into LionMarketplace escrow. It is absent from the seller's wallet collection and cannot breed while listed.
-- Buyers pay the exact listed ETH amount plus network gas. The transfer and seller credit occur atomically; a failed NFT transfer rolls the whole purchase back.
-- Only the seller can cancel an active listing. Cancellation returns the NFT.
-- After a sale, the seller opens the market and selects Withdraw Proceeds. No platform fee or royalty is deducted.
-- Sale events record token ID, seller, buyer and price in wei. A normal wallet transfer does not imply a sale.
-
-The market is bound to a single LionNFT contract. Use the listing flow rather than transferring NFTs directly to the market address. Unsolicited safe transfers are rejected; an unsafe ERC-721 transferFrom can still send a token without a listing and there is no admin rescue. The test suite covers permissions, exact payment, repeat buys, receiver rejection, withdrawal failure and withdrawal reentry.
-
-## Optional local development on Windows PowerShell
-
-Install Node.js 22.12+ or 24 LTS including npm. Python and virtual environments are not required.
+### Configure the public deployment
 
 ```powershell
-npm ci
+$nftAddress = "0x853E3613Be4d66D656bE481A377c314bfe40e97e"
+$marketAddress = "0x2af1853622a2FDcEdA675850D4a8385591718154"
+npm run remix:connect -- --nft $nftAddress --market $marketAddress
+npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 ```
 
-Terminal 1 (keep running):
+Open **http://127.0.0.1:5173/** and connect MetaMask on Sepolia. Stop the server with `Ctrl+C` when finished. This local frontend reads the same collection and market as the hosted site.
+
+`remix:connect` checks the network, deployed code, NFT settings and the market's NFT binding. It writes `.env.local` and a connection record under `deployments/`. It does not deploy contracts or sign transactions.
+
+For another Sepolia RPC:
+
+```powershell
+npm run remix:connect -- --nft $nftAddress --market $marketAddress --rpc https://YOUR_SEPOLIA_RPC
+```
+
+### Environment settings
+
+The validated connection command creates these settings automatically. `.env.example` documents the same fields for manual configuration:
+
+```dotenv
+VITE_CONTRACT_ADDRESS=0x853E3613Be4d66D656bE481A377c314bfe40e97e
+VITE_MARKET_ADDRESS=0x2af1853622a2FDcEdA675850D4a8385591718154
+VITE_CHAIN_ID=11155111
+VITE_RPC_URL=https://ethereum-sepolia-rpc.publicnode.com
+```
+
+These are public frontend settings. `VITE_` values are included in the browser build; do not place private keys, seed phrases or private API credentials in them. MetaMask handles signing. Restart Vite after changing configuration, and rebuild before publishing a changed configuration.
+
+## 5. Deploy a new pair using Remix
+
+Use this workflow for a separate collection or a changed contract implementation. Existing users can use the public deployment without doing this.
+
+1. Open [Remix IDE](https://app.remix.live/) with MetaMask and create a dedicated workspace.
+2. Import `remix/Lionverse.sol`. This self-contained file includes the project contracts and pinned OpenZeppelin 5.4.0 dependencies. No remote Solidity imports or separate library deployments are required.
+3. Copy `remix/remix.config.json` into the workspace configuration. Select Solidity **0.8.28+commit.7893614a** and **Use configuration file**. Confirm optimizer **200 runs**, **viaIR enabled** and EVM target **Paris** in Compilation Details. Older Remix versions can use `remix/compiler_config.json`.
+4. Compile `Lionverse.sol`. Choose **LionNFT** in Deploy & Run.
+5. Select **Browser Extension / MetaMask** on Sepolia, keep transaction value at zero, deploy LionNFT and approve in MetaMask. Its constructor takes no arguments.
+6. Choose **LionMarketplace**, pass the NFT address as `collection`, and deploy it through MetaMask.
+7. Read the marketplace's `nft()` value and confirm that it matches the NFT address. Save both addresses and deployment receipts.
+8. Run `npm run remix:connect -- --nft YOUR_NFT_ADDRESS --market YOUR_MARKET_ADDRESS`, then start the frontend or rebuild the hosted version.
+
+See the [detailed English guide](remix/README.md) for configuration details. A [Chinese walkthrough](docs/Remix-Guide-ZH.md) is also available.
+
+After contract changes, run `npm run compile` to synchronize frontend ABIs, then `npm run remix:prepare` to rebuild and validate the portable source. Do not edit generated `remix/Lionverse.sol` directly. Preparation checks compilation, runtime size, library linking, settings and ABI compatibility.
+
+Remix VM is an isolated browser chain, not Sepolia. A new non-upgradeable contract does not modify an old deployment. Changing addresses does not migrate NFTs, listings or seller proceeds; access those through their original contracts.
+
+## 6. Optional local blockchain development
+
+This creates an independent collection on chain ID **31337** and does not interact with the Sepolia NFTs.
+
+In terminal 1, keep the chain running:
 
 ```powershell
 npm run chain
 ```
 
-Terminal 2:
+In terminal 2, deploy both contracts and start the frontend:
 
 ```powershell
 npm run deploy:local
-npm run dev -- --host 127.0.0.1
+npm run dev -- --host 127.0.0.1 --port 5173 --strictPort
 ```
 
-Open http://127.0.0.1:5173. Connect MetaMask in a browser with the extension enabled.
-The local network RPC is http://127.0.0.1:8545, chain ID 31337. Import one of the **public, local-only** Hardhat test accounts. Never send real assets to these accounts. The in-app browser may not expose a wallet extension.
+Deployment updates `.env.local` for RPC `http://127.0.0.1:8545` and saves local records under `deployments/`. In MetaMask, use the local network and one of the public development accounts printed by Hardhat. Those accounts are for disposable local testing only.
 
-Full deployment creates both NFT and market contracts, updates only frontend connection settings in .env.local, and saves both addresses/transaction hashes in deployments/31337.json. Restarting the local chain clears its state: deploy again. No browser-based demo collection is used; the collection is read from the configured contract.
+Restarting the local chain clears its state. Deploy again after a reset. To return to Sepolia, stop Vite, run the Sepolia connection command in Section 4 and restart Vite.
 
-To add a market to an existing local simplified NFT contract without changing that NFT address or its collection:
+`npm run deploy:market:local` can add a marketplace to an already configured local NFT contract. It does not migrate listings or proceeds from an older marketplace.
 
-```powershell
-npm run deploy:market:local
-```
-
-This uses the current VITE_CONTRACT_ADDRESS / VITE_CHAIN_ID. Redeploying the market does not migrate old listings or proceeds: use their original market contract to cancel or withdraw.
-
-## Checks
+## 7. Tests and validation
 
 ```powershell
 npm run check
+```
+
+This runs ESLint, Prettier checks, compilation, the contract suite and a production build. The current suite has **18 tests**: nine NFT tests, eight marketplace tests and one Remix connection-validation test. It covers probabilities, inheritance, ownership, cooldowns, metadata, burn history, approval, escrow, payment, cancellation, withdrawal and failure handling.
+
+### Browser checks
+
+```powershell
 npx playwright install chromium
 npm run test:ui
 ```
 
-check runs ESLint, Prettier, contract tests and production build. UI tests check the four-page interface and wallet-required state. To run the full browser-to-EVM flow, keep the local chain running and deploy a **new empty NFT/market pair** first:
+The default run checks the English interface and wallet-required states. The full local-chain scenario is skipped unless enabled. Playwright starts Vite on port **5174**, which must be free.
+
+For the full scenario, use a **disposable local chain and a freshly deployed empty NFT/market pair**. The test changes state, advances local EVM time and burns NFTs. With the local chain running, run:
 
 ```powershell
 npm run deploy:local
-$env:LION_CHAIN_TEST="1"
-npm run test:ui
-Remove-Item Env:LION_CHAIN_TEST
+$env:LION_CHAIN_TEST = "1"
+try {
+    npm run test:ui
+} finally {
+    Remove-Item Env:LION_CHAIN_TEST -ErrorAction SilentlyContinue
+}
 ```
 
-The test uses unlocked local accounts via a test-only wallet adapter. It mints two NFTs, rejects a transaction, advances local EVM time, breeds, transfers, switches accounts, reads a parent, lists, cancels, buys and withdraws proceeds. It also tests burn confirmation, wallet rejection, destruction, archived-parent navigation and non-reused IDs. It does not replace a real MetaMask/Sepolia demonstration.
+`LION_TEST_RPC_URL` defaults to `http://127.0.0.1:8545` and must match the local frontend configuration. The scenario uses a test-only adapter for unlocked local accounts. It exercises minting, wallet rejection, breeding, transfer, account switching, listings, purchases, withdrawals, cancellation and burning. It is not a real MetaMask/Sepolia test. Restore the Sepolia configuration after local testing if needed.
 
-## Source map
+### Manual two-account Sepolia demonstration
 
-- contracts/LionNFT.sol — ERC-721 ownership, mint, breed, burn, lifetime cap and archived metadata
-- contracts/LionTraits.sol — four-trait random selection and inheritance
-- contracts/LionArt.sol — on-chain SVG renderer
-- contracts/LionMarketplace.sol — fixed-price escrow, purchase and withdrawal
-- src/App.jsx — Mint / My Lions / Breed / Market and NFT detail
-- src/components/MarketPage.jsx — listings, purchase/cancel and seller proceeds
-- src/services/blockchain.js — wallet, reads, transaction confirmation
-- src/domain/catalog.js — display names and derived rarity
-- scripts/deploy.cjs — optional local development deployment
-- remix/Lionverse.sol — self-contained Remix source for both contracts and pinned dependencies
-- remix/compiler_config.json — reproducible Remix compiler settings
-- scripts/prepare-remix.mjs — regenerate/compile the bundle and validate frontend ABI compatibility
-- scripts/connect-remix.mjs — validate real Sepolia addresses and configure the existing frontend
-- scripts/deploy-market.cjs — add a market to an existing local NFT deployment
-- scripts/sync-abi.mjs — copy compiled ABI to frontend
-- test/ — Solidity behavior and probability boundary tests
-- tests/ui/ — browser checks and optional real local-EVM scenario
+1. Connect A; mint two lions and inspect their traits.
+2. Wait for both cooldowns; breed and inspect the child's generation and parents.
+3. Transfer a lion to B; connect B and verify it in **My Pride**.
+4. With A, approve and list another lion; with B, locate it in **Marketplace** and purchase it.
+5. Confirm B owns the NFT; return to A and choose **Withdraw Proceeds**.
+6. List and cancel a separate NFT; verify it returns to the seller.
+7. Burn an unwanted, unlisted NFT last, using its exact ID; verify the receipt and updated collection.
 
-## Previous version
+Save token IDs, account identities, prices and transaction links. The completed demonstration uses different tokens for different cases; the evidence register records the actual IDs and receipts.
 
-The full hidden-genetics edition is preserved on the local branch backup/full-genetics. This simplified edition needs a **new deployment** because its data layout and ABI differ. Old contracts/NFTs remain at their old addresses. Existing browser demo data is left untouched but is not used.
+## 8. Production build and hosting
 
-Report PDF, English demo video (under 15 minutes), team contribution distribution and personal peer submission must be prepared separately for COMP7610. No Sepolia deployment is assumed from local tests.
+Configure Sepolia as in Section 4 before building:
+
+```powershell
+npm run build
+npm run preview -- --host 127.0.0.1
+```
+
+Open the preview address printed in the terminal. The output is **`dist/`**. For manual Netlify deployment, upload its contents so that `index.html` is at the deployment root. For a repository-connected Netlify build, use build command `npm run build`, publish directory `dist`, and set the four public `VITE_` variables in the site's build environment.
+
+Verify the deployed URL is publicly accessible. Publishing the frontend does not reset or redeploy contracts. A configuration change requires a new build and deployment; it does not change an already published bundle automatically.
+
+## 9. Repository structure
+
+```text
+contracts/             NFT, trait, artwork and marketplace Solidity source
+contracts/test/        Test harnesses and receiver/withdrawal actors
+src/                   React UI, domain labels and Ethers.js integration
+src/generated/         Checked-in frontend contract ABIs
+remix/                 Portable source, compiler configs and dependency license
+scripts/               Deployment, connection validation and ABI/bundle tools
+test/                  Local contract and connection-validation tests
+tests/ui/              Playwright interface and optional local-chain tests
+docs/                  Architecture, Sepolia receipts and deployment guides
+public/fonts/          Bundled fonts and license notices
+.env.example           Public frontend configuration template
+```
+
+### Useful commands
+
+| Command                           | Purpose                                             |
+| --------------------------------- | --------------------------------------------------- |
+| `npm run dev`                     | Start the Vite development server.                  |
+| `npm run build`                   | Build production assets into `dist/`.               |
+| `npm run preview`                 | Serve the existing build locally.                   |
+| `npm run compile`                 | Compile and synchronize frontend ABIs.              |
+| `npm run remix:prepare`           | Regenerate and validate the portable Remix bundle.  |
+| `npm run remix:connect -- --help` | Show Sepolia connection command syntax.             |
+| `npm test`                        | Run 18 contract and connection-validation tests.    |
+| `npm run test:ui`                 | Run browser checks; chain scenario requires opt-in. |
+| `npm run check`                   | Run lint, formatting, contract tests and build.     |
+| `npm run chain`                   | Start a local Hardhat blockchain.                   |
+| `npm run deploy:local`            | Deploy and configure a new local NFT/market pair.   |
+
+## 10. Troubleshooting
+
+| Symptom                                 | What to check                                                                                                    |
+| --------------------------------------- | ---------------------------------------------------------------------------------------------------------------- |
+| No wallet detected                      | Use a browser with MetaMask installed and enabled, then reload.                                                  |
+| Collection or listings fail to load     | Check RPC, chain ID and both addresses. Run the validated connection command.                                    |
+| Wrong network                           | Use Sepolia for the public deployment; chain 31337 is for local development.                                     |
+| A teammate cannot see a listing         | Check the same addresses and network, wait for the listing receipt and refresh. Approval alone is not a listing. |
+| A listed lion disappeared from My Pride | It is in marketplace escrow. Buy or cancel through Marketplace.                                                  |
+| Breeding is unavailable                 | Own two different unlisted lions and wait for both cooldowns.                                                    |
+| Seller has not received ETH             | Connect the seller and use Withdraw Proceeds; a sale initially credits the contract.                             |
+| NFT absent from MetaMask's NFT tab      | Check My Pride first. Wallet display may require importing the NFT contract address and token ID.                |
+| Port already in use                     | Stop the server using it or choose another development port. Browser tests require 5174.                         |
+| Changed configuration has no effect     | Restart Vite, or rebuild and republish the static site.                                                          |
+| Wallet request rejected                 | That request did not submit the operation. Recheck page state before retrying.                                   |
+| PowerShell blocks npm.ps1               | Use `npm.cmd` instead of `npm` in the commands above.                                                            |
+
+## 11. Scope and attribution
+
+This is an educational testnet project. Block-based randomness is influenceable and unsuitable for paid random rewards. Minting is free apart from gas. On-chain SVG and metadata make assets self-contained but increase gas usage; fees vary.
+
+The marketplace supports one collection and fixed ETH prices. Use **List for Sale** rather than directly transferring an NFT to the market address. Unsolicited safe transfers are rejected; an unsafe `transferFrom` can lock an unlisted NFT because no administrative rescue function exists.
+
+**All frontend work was completed by AI.** Frontend development is excluded from the three student members' reported responsibilities. Their allocated areas cover NFT contract work and deployment, marketplace work and transaction verification, and testing, documentation and video coordination. Final member identities and responsibilities belong in the submitted report.
+
+OpenZeppelin and bundled fonts retain their license notices in `remix/OpenZeppelin-LICENSE` and `public/fonts/`. See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidance. This source is the simplified coursework edition; older contracts and their assets remain separate from the Sepolia pair above.
