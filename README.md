@@ -4,6 +4,8 @@ A small React + Ethers.js + Solidity DApp: mint, collect, breed, transfer, trade
 
 The primary compilation/deployment workflow is now **Remix + MetaMask + Sepolia**. Hardhat is retained for optional local development and automated tests. The running DApp talks directly to the deployed contracts, independently of the editor used to deploy them.
 
+Live DApp: **https://symphonious-sherbet-47ba97.netlify.app/**. The site is publicly accessible and uses the existing Sepolia NFT and market. See [deployment records](docs/Deployment-Sepolia.md) for addresses, confirmed deployment transactions and verification scope.
+
 ## Deploy using Remix
 
 1. Follow [the complete Remix walkthrough](remix/README.md).
@@ -20,7 +22,7 @@ npm run dev -- --host 127.0.0.1
 
 The connect command checks Sepolia chain ID, contract code, expected NFT settings and the marketplace's NFT binding before updating .env.local. It sends no transactions. No private key or Hardhat deployment is required for this workflow. The checked-in frontend ABIs already match the supplied bundle. To regenerate and validate the bundle after changes, run `npm run remix:prepare`.
 
-The bundle and workflow are prepared; no actual Remix/Sepolia deployment is claimed. Add real contract addresses and confirmed deployment transaction links to the final report after deploying.
+Both contracts have now been deployed with Remix and MetaMask on Sepolia. Their confirmed transaction links are recorded in [deployment records](docs/Deployment-Sepolia.md); include those records and actual operation evidence in the final report.
 
 ## Data and rules
 
