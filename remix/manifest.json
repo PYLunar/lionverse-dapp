@@ -1,0 +1,123 @@
+{
+  "compiler": "0.8.28+commit.7893614a.Emscripten.clang",
+  "openzeppelin": "5.4.0",
+  "settings": {
+    "optimizer": {
+      "enabled": true,
+      "runs": 200
+    },
+    "viaIR": true,
+    "evmVersion": "paris",
+    "outputSelection": {
+      "*": {
+        "*": [
+          "abi",
+          "evm.bytecode",
+          "evm.deployedBytecode",
+          "metadata"
+        ]
+      }
+    }
+  },
+  "bundleSha256": "546bca4a7e08aa187f2caddbfe5de75170768c485c96bf58ebe391ca35e5424c",
+  "sources": [
+    {
+      "path": "@openzeppelin/contracts/utils/introspection/IERC165.sol",
+      "sha256": "9055c2994b37dea1a41b7b7926dcb510f05dbe2540b0aafc5fbee9558fffd0ca"
+    },
+    {
+      "path": "@openzeppelin/contracts/token/ERC721/IERC721.sol",
+      "sha256": "ff0eb9902bf0ac099205615fac90eacf34fae637571b05aab3ea35dea53d5f17"
+    },
+    {
+      "path": "@openzeppelin/contracts/token/ERC721/extensions/IERC721Metadata.sol",
+      "sha256": "33223782ea652dca413702ce92f9f59d91d758a035065b24bbedb7dc60c63a78"
+    },
+    {
+      "path": "@openzeppelin/contracts/token/ERC721/IERC721Receiver.sol",
+      "sha256": "eafee3ffdc7cb2fba4bf6bd16fb28f8e5b4679742e81c2ad42a1b1df5c179feb"
+    },
+    {
+      "path": "@openzeppelin/contracts/interfaces/draft-IERC6093.sol",
+      "sha256": "df936240c9a5d342582cbda70dd773b1c1d0e0dda3042b1c17b902ef0c36827b"
+    },
+    {
+      "path": "@openzeppelin/contracts/token/ERC721/utils/ERC721Utils.sol",
+      "sha256": "f2041b1685dcf0cf6b968d9b8454e5a46068b1df5ab0e82ba0b269fa2f3099a8"
+    },
+    {
+      "path": "@openzeppelin/contracts/utils/Context.sol",
+      "sha256": "847fda5460fee70f56f4200f59b82ae622bb03c79c77e67af010e31b7e2cc5b6"
+    },
+    {
+      "path": "@openzeppelin/contracts/utils/Panic.sol",
+      "sha256": "270fc8401c1a13fae6a7a4a2dd6e381b95d658896701e51f0d3e2688acab3dec"
+    },
+    {
+      "path": "@openzeppelin/contracts/utils/math/SafeCast.sol",
+      "sha256": "9769274bf53f26a7c7896c526ea1980dc9bea5bf5c2a5fd04870008c4afc1de9"
+    },
+    {
+      "path": "@openzeppelin/contracts/utils/math/Math.sol",
+      "sha256": "92fee281fd46a1b058b190cf21d6b1a528f0433a907850ae1c9bcf36c5c0cd98"
+    },
+    {
+      "path": "@openzeppelin/contracts/utils/math/SignedMath.sol",
+      "sha256": "1ed50b1056af886752f0fb48a0165d381e69bb4a4b18b893b066dc144a7e08d7"
+    },
+    {
+      "path": "@openzeppelin/contracts/utils/Strings.sol",
+      "sha256": "2db7d21151644c57f75ed3ab55e87f3cf7fbf587a65345650fd740e2cfd50be3"
+    },
+    {
+      "path": "@openzeppelin/contracts/utils/introspection/ERC165.sol",
+      "sha256": "61a2b12c96857aaa35f48aeda67a4281637a42494c0b3795be0ae976aa7b3793"
+    },
+    {
+      "path": "@openzeppelin/contracts/token/ERC721/ERC721.sol",
+      "sha256": "330a87f2bf94083df8ddd341735d712866455042aaca58d33ee1799773e1cae1"
+    },
+    {
+      "path": "@openzeppelin/contracts/token/ERC721/extensions/IERC721Enumerable.sol",
+      "sha256": "03c8c0b9ebbe6fe0a682332d9f980723996a1856ff0a767378eae95288069649"
+    },
+    {
+      "path": "@openzeppelin/contracts/token/ERC721/extensions/ERC721Enumerable.sol",
+      "sha256": "2eda4a86ad7947336c407da89826eb604dea67f966dccbf1fb04dca55666e130"
+    },
+    {
+      "path": "@openzeppelin/contracts/utils/ReentrancyGuard.sol",
+      "sha256": "32fbb1c908ec1b4de85cc1bb10091aebd5816ffe80dfdd5ca5e084fbea67a462"
+    },
+    {
+      "path": "@openzeppelin/contracts/utils/Base64.sol",
+      "sha256": "b24abf66270126ee48e47646b1a2258b429aeb220b6ca828a1ee2163fd4dce87"
+    },
+    {
+      "path": "contracts/LionTraits.sol",
+      "sha256": "470535dc26c06acec7cdfe7776119b7c73107cf730972fff4ee5ad7cde84016e"
+    },
+    {
+      "path": "contracts/LionArt.sol",
+      "sha256": "69adf078e4107cddf8167d65dc3ebb121c68e0f09fb0d9a90cf5a4f7a9dadd9b"
+    },
+    {
+      "path": "contracts/LionNFT.sol",
+      "sha256": "9473104e8f3cf12e5448c8d9764be92449b989ae5534754dea568a902e6bad13"
+    },
+    {
+      "path": "contracts/LionMarketplace.sol",
+      "sha256": "05145cd41756bb4511a425bd065c75020b709dde8f74e05d688b15ce98a9328d"
+    }
+  ],
+  "contracts": {
+    "LionNFT": {
+      "runtimeBytes": 13710,
+      "abiMatchesFrontend": true
+    },
+    "LionMarketplace": {
+      "runtimeBytes": 2233,
+      "abiMatchesFrontend": true
+    }
+  }
+}

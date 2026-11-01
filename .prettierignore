@@ -7,6 +7,8 @@ test-results
 playwright-report
 package-lock.json
 contracts/generated
+remix/Lionverse.sol
+remix/manifest.json
 src/generated
 public/fonts
 deployments

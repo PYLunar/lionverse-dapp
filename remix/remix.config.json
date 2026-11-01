@@ -1,0 +1,14 @@
+{
+  "project": "Lionverse",
+  "solidity-compiler": {
+    "language": "Solidity",
+    "settings": {
+      "optimizer": { "enabled": true, "runs": 200 },
+      "viaIR": true,
+      "evmVersion": "paris",
+      "outputSelection": {
+        "*": { "*": ["abi", "evm.bytecode", "evm.deployedBytecode", "metadata"] }
+      }
+    }
+  }
+}

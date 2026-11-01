@@ -7,7 +7,9 @@ const { deployMarket } = require("./deploy-market.cjs");
 async function main() {
   const [deployer] = await hre.ethers.getSigners();
   if (!deployer)
-    throw new Error("Set DEPLOYER_PRIVATE_KEY in .env.local for Sepolia deployment.");
+    throw new Error(
+      "No local deployment signer found. Use Remix and MetaMask for Sepolia.",
+    );
   const factory = await hre.ethers.getContractFactory("LionNFT");
   const request = await factory.getDeployTransaction();
   const estimate = BigInt(

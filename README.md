@@ -2,6 +2,26 @@
 
 A small React + Ethers.js + Solidity DApp: mint, collect, breed, transfer, trade and burn lion NFTs.
 
+The primary compilation/deployment workflow is now **Remix + MetaMask + Sepolia**. Hardhat is retained for optional local development and automated tests. The running DApp talks directly to the deployed contracts, independently of the editor used to deploy them.
+
+## Deploy using Remix
+
+1. Follow [the complete Remix walkthrough](remix/README.md).
+2. Upload **remix/Lionverse.sol** into a dedicated Remix workspace and use the supplied **remix/remix.config.json** as its workspace configuration. Older Remix versions can use **remix/compiler_config.json**. All Solidity dependencies are included, pinned to OpenZeppelin 5.4.0.
+3. Select Solidity **0.8.28**, optimizer **200** runs, **viaIR**, and **Paris** EVM target using the supplied compiler configuration.
+4. With MetaMask on Sepolia, deploy **LionNFT** first (no constructor arguments), then **LionMarketplace** using the NFT address as its constructor argument. Sign both deployments in MetaMask and save their receipts.
+5. Connect the frontend using the two real deployed addresses:
+
+```powershell
+npm ci
+npm run remix:connect -- --nft YOUR_NFT_ADDRESS --market YOUR_MARKET_ADDRESS
+npm run dev -- --host 127.0.0.1
+```
+
+The connect command checks Sepolia chain ID, contract code, expected NFT settings and the marketplace's NFT binding before updating .env.local. It sends no transactions. No private key or Hardhat deployment is required for this workflow. The checked-in frontend ABIs already match the supplied bundle. To regenerate and validate the bundle after changes, run `npm run remix:prepare`.
+
+The bundle and workflow are prepared; no actual Remix/Sepolia deployment is claimed. Add real contract addresses and confirmed deployment transaction links to the final report after deploying.
+
 ## Data and rules
 
 Each lion has **four visible traits**: species, fur, mane, eyes. It also stores generation, birth time, and two parent IDs. Ownership comes from ERC-721. Images (SVG) and metadata are on-chain.
@@ -42,7 +62,7 @@ This feature requires deploying a new NFT and its matching market; an existing n
 
 The market is bound to a single LionNFT contract. Use the listing flow rather than transferring NFTs directly to the market address. Unsolicited safe transfers are rejected; an unsafe ERC-721 transferFrom can still send a token without a listing and there is no admin rescue. The test suite covers permissions, exact payment, repeat buys, receiver rejection, withdrawal failure and withdrawal reentry.
 
-## Run on Windows PowerShell
+## Optional local development on Windows PowerShell
 
 Install Node.js 22.12+ or 24 LTS including npm. Python and virtual environments are not required.
 
@@ -76,17 +96,6 @@ npm run deploy:market:local
 
 This uses the current VITE_CONTRACT_ADDRESS / VITE_CHAIN_ID. Redeploying the market does not migrate old listings or proceeds: use their original market contract to cancel or withdraw.
 
-## Sepolia
-
-Copy .env.example to .env.local **only if you do not already have one**. Set SEPOLIA_RPC_URL and DEPLOYER_PRIVATE_KEY to a dedicated test wallet with Sepolia test ETH, then:
-
-```powershell
-npm run deploy:sepolia
-npm run dev
-```
-
-Deployment writes `VITE_CONTRACT_ADDRESS`, `VITE_MARKET_ADDRESS`, `VITE_CHAIN_ID`, `VITE_RPC_URL`. Never put secrets in `VITE_` variables. Add both deployed addresses and confirmed transaction links to your submission after actual deployment; none is claimed here.
-
 ## Checks
 
 ```powershell
@@ -116,7 +125,11 @@ The test uses unlocked local accounts via a test-only wallet adapter. It mints t
 - src/components/MarketPage.jsx — listings, purchase/cancel and seller proceeds
 - src/services/blockchain.js — wallet, reads, transaction confirmation
 - src/domain/catalog.js — display names and derived rarity
-- scripts/deploy.cjs — local/Sepolia deployment
+- scripts/deploy.cjs — optional local development deployment
+- remix/Lionverse.sol — self-contained Remix source for both contracts and pinned dependencies
+- remix/compiler_config.json — reproducible Remix compiler settings
+- scripts/prepare-remix.mjs — regenerate/compile the bundle and validate frontend ABI compatibility
+- scripts/connect-remix.mjs — validate real Sepolia addresses and configure the existing frontend
 - scripts/deploy-market.cjs — add a market to an existing local NFT deployment
 - scripts/sync-abi.mjs — copy compiled ABI to frontend
 - test/ — Solidity behavior and probability boundary tests
