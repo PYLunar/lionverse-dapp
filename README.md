@@ -146,7 +146,7 @@ Use this workflow for a separate collection or a changed contract implementation
 7. Read the marketplace's `nft()` value and confirm that it matches the NFT address. Save both addresses and deployment receipts.
 8. Run `npm run remix:connect -- --nft YOUR_NFT_ADDRESS --market YOUR_MARKET_ADDRESS`, then start the frontend or rebuild the hosted version.
 
-See the [detailed English guide](remix/README.md) for configuration details. A [Chinese walkthrough](docs/Remix-Guide-ZH.md) is also available.
+See the [detailed Remix guide](remix/README.md) and the [deployment checklist](docs/Remix-Deployment-Guide.md) for configuration details.
 
 After contract changes, run `npm run compile` to synchronize frontend ABIs, then `npm run remix:prepare` to rebuild and validate the portable source. Do not edit generated `remix/Lionverse.sol` directly. Preparation checks compilation, runtime size, library linking, settings and ABI compatibility.
 
