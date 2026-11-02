@@ -51,3 +51,21 @@ The following transactions were supplied with the demonstration evidence and che
 At verification block 12042504, account B owned #10 and #11, account A owned #2, listing #2 was cleared, A's remaining seller proceeds were zero, and #8 was burned. These are historical snapshot results; later transactions may change live balances and ownership.
 
 The local `npm test` run on 2026-11-02 passed 18 tests: nine NFT tests, eight marketplace tests and one connection-validation test. Rejection and reentrancy checks run locally, not as additional manual Sepolia transactions. Reports, screenshots, video and packaging outputs are maintained separately from the runnable source.
+
+## Report and video evidence mapping
+
+The report screenshots and the edited video were captured in separate test sessions. Their founder mint and breeding cases therefore have different token IDs. The report receipt register above applies to the report cases; its mint and breed receipts should not be presented as receipts for the video's different tokens.
+
+| Operation             | Report evidence              | Edited video evidence        |
+| --------------------- | ---------------------------- | ---------------------------- |
+| Founder mint          | #12                          | #9                           |
+| Breed                 | #1 + #2 produce #13          | #7 + #8 produce #11          |
+| Transfer A to B       | #11                          | #11                          |
+| Approve, list and buy | #10 at 0.01 Sepolia ETH      | #10 at 0.01 Sepolia ETH      |
+| Seller withdrawal     | A withdraws 0.01 Sepolia ETH | A withdraws 0.01 Sepolia ETH |
+| Burn                  | #8                           | #8                           |
+| Cancel listing        | #2                           | #2                           |
+
+The final edited video is `Lionverse_Concise_EN_MaleVoice_v2.mp4`, approximately 7 minutes 45 seconds at 1920 x 1080. It uses English male AI narration, readable subtitles and labels for the current test. Waiting periods are shortened, and the original recordings are preserved.
+
+MetaMask warnings are visible in the recording. The team identifies these as false positives in its Sepolia demonstration. The operations used Sepolia test ETH, with no mainnet ETH or real-money payment involved. Purchasing and withdrawing did transfer test ETH; zero application payment for minting or an NFT gift does not mean that no on-chain transaction occurred. The warning's technical cause has not been independently established.

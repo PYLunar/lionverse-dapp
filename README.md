@@ -93,6 +93,8 @@ Python is not required to run, compile or test the DApp. The optional font-maint
 
 Examples use **Windows PowerShell** from the repository root.
 
+The repository's `.gitattributes` keeps text files in LF format on Windows as well as other systems. Prettier uses the same setting, so a fresh clone can run the checks without changing Git's global configuration. If an existing checkout reports line-ending errors, run `npm run format`, then `npm run check`.
+
 ```powershell
 git clone https://github.com/PYLunar/lionverse-dapp.git
 cd lionverse-dapp
@@ -216,6 +218,8 @@ try {
 
 Save token IDs, account identities, prices and transaction links. The completed demonstration uses different tokens for different cases; the evidence register records the actual IDs and receipts.
 
+The report screenshots and edited video come from separate test sessions: the report documents mint #12 and breeding #1 + #2 into #13, while the video shows mint #9 and breeding #7 + #8 into #11. See the [evidence mapping](docs/Deployment-Sepolia.md#report-and-video-evidence-mapping) for the shared cases.
+
 ## 8. Production build and hosting
 
 Configure Sepolia as in Section 4 before building:
@@ -285,5 +289,7 @@ This is an educational testnet project. Block-based randomness is influenceable 
 The marketplace supports one collection and fixed ETH prices. Use **List for Sale** rather than directly transferring an NFT to the market address. Unsolicited safe transfers are rejected; an unsafe `transferFrom` can lock an unlisted NFT because no administrative rescue function exists.
 
 **All frontend work was completed by AI.** Frontend development is excluded from the three student members' reported responsibilities. Their allocated areas cover NFT contract work and deployment, marketplace work and transaction verification, and testing, documentation and video coordination. Final member identities and responsibilities belong in the submitted report.
+
+The edited demonstration uses AI-generated English male narration and subtitles. Waiting periods are shortened; the operation footage comes from recorded Sepolia tests.
 
 OpenZeppelin and bundled fonts retain their license notices in `remix/OpenZeppelin-LICENSE` and `public/fonts/`. See [CONTRIBUTING.md](CONTRIBUTING.md) for development guidance. This source is the simplified coursework edition; older contracts and their assets remain separate from the Sepolia pair above.

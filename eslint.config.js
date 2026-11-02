@@ -7,6 +7,8 @@ export default [
   {
     ignores: [
       "node_modules/**",
+      "tmp/**",
+      "output/**",
       ".venv/**",
       "dist/**",
       "artifacts/**",
